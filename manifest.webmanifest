@@ -1,1 +1,16 @@
-{"name": "IT Service Report - Santa Clara Shipping Corp.", "short_name": "IT Report", "description": "IT Service Report - Preventive maintenance site visit. Works offline.", "start_url": "./IT_Service_Report_App.html", "scope": "./", "display": "standalone", "orientation": "portrait", "background_color": "#f4f1fa", "theme_color": "#673ab7", "icons": [{"src": "logoo.png", "sizes": "512x512", "type": "image/png", "purpose": "any"}, {"src": "logoo.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}, {"src": "logo.png", "sizes": "192x192", "type": "image/png", "purpose": "any"}]}
+{
+  "name": "IT Service Report - Santa Clara Shipping Corp.",
+  "short_name": "IT Report",
+  "description": "IT Service Report - Preventive maintenance site visit. Works offline.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#eef0f7",
+  "theme_color": "#0b4d6e",
+  "icons": [
+    { "src": "logoo.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "logoo.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "logo.png", "sizes": "192x192", "type": "image/png", "purpose": "any" }
+  ]
+}

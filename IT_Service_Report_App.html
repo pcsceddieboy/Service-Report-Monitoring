@@ -138,7 +138,7 @@ button:active{transform:scale(.98)}
 </div>
 </div>
 <div id="app" hidden>
-<div class="topbar noprint"><span>Logged in as <b id="who">admin</b></span><span class="rowbtn"><button id="pwbtn">Change password</button><button id="logout">Logout</button></span></div>
+<div class="topbar noprint"><span>Logged in as <b id="who">admin</b> · <span id="topbar_cloud">OFFLINE (this device)</span></span><span class="rowbtn"><button id="pwbtn">Change password</button><button id="logout">Logout</button></span></div>
 <div id="form">
 	
 <div class="card top">
@@ -155,6 +155,12 @@ button:active{transform:scale(.98)}
 <div class="card"><h2>Recommendations</h2><div id="rec"></div><button data-add="rec">+ Add recommendation</button></div>
 <div class="card"><h2>Overall remarks</h2><textarea id="rem"></textarea>
 <div class="g2"><div><label>Client representative</label><input id="client"></div><div></div></div></div>
+<div class="card"><h2>Online shared storage</h2>
+<div class="mu" id="cloud_stat">Not connected — reports save on this device only.</div>
+<div class="g2"><div><label>Firebase database URL</label><input id="cloud_url" placeholder="https://your-project-default-rtdb.firebaseio.com"></div>
+<div><label>Status</label><div class="mu" id="cloud_msg" style="padding-top:12px">Paste URL then tap Connect.</div></div></div>
+<div class="act" style="margin-top:10px"><button type="button" class="p" id="cloud_connect">Connect shared storage</button><button type="button" id="cloud_sync">Sync now</button><button type="button" id="cloud_off">Disconnect</button></div>
+<p class="mu" style="margin:8px 0 0">Once connected, every submit saves to the shared online list so the whole IT team sees the same reports. Works offline too — it keeps a copy on this device.</p></div>
 <div class="act"><button class="p" id="submit">Submit and generate QR</button></div>
 <p class="mu" id="msg"></p>
 </div>
@@ -1494,9 +1500,35 @@ function drawQR(text){
  $("dlqr").onclick=()=>{const a=document.createElement("a");a.href=c.toDataURL("image/png");a.download="service-report-qr.png";a.click()};
 }
 const KEY="sr_reports_v1";
+const CLOUD_KEY="sr_cloud_v1";
+// Pre-fill your Firebase URL here later so the team doesn't type it.
+// Example: const DEFAULT_CLOUD_URL="https://it-service-report-default-rtdb.asia-southeast1.firebasedatabase.app";
+const DEFAULT_CLOUD_URL="";
+function cloudCfg(){try{return JSON.parse(localStorage.getItem(CLOUD_KEY)||"null")}catch(e){return null}}
+function cloudUrl(){const c=cloudCfg(); if(c&&c.url) return String(c.url).replace(/\/+$/,""); if(DEFAULT_CLOUD_URL) return String(DEFAULT_CLOUD_URL).replace(/\/+$/,""); return "";}
+function cloudSet(url){ if(url) localStorage.setItem(CLOUD_KEY,JSON.stringify({url:url.replace(/\/+$/,"")})); else localStorage.removeItem(CLOUD_KEY); }
+async function cloudPut(d){
+  const u=cloudUrl(); if(!u) return {ok:false,reason:"offline"};
+  try{ const r=await fetch(u+"/reports/"+encodeURIComponent(d.no)+".json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)});
+    if(!r.ok) throw 0; return {ok:true}; }catch(e){ return {ok:false,reason:"net"}; }
+}
+async function cloudAll(){
+  const u=cloudUrl(); if(!u) return null;
+  try{ const r=await fetch(u+"/reports.json"); if(!r.ok) throw 0; return (await r.json())||{}; }catch(e){ return null; }
+}
+async function cloudDel(n){
+  const u=cloudUrl(); if(!u) return false;
+  try{ const r=await fetch(u+"/reports/"+encodeURIComponent(n)+".json",{method:"DELETE"}); return r.ok; }catch(e){ return false; }
+}
+function cloudUI(){
+  const u=cloudUrl();
+  if($("cloud_url") && !(($("cloud_url").value||"").trim()) && u) $("cloud_url").value=u;
+  if($("cloud_stat")) $("cloud_stat").textContent=u?("Connected: "+u+" — new reports sync to the shared online list."):"Not connected — reports save on this device only.";
+  if($("topbar_cloud")) $("topbar_cloud").textContent=u?"ONLINE shared":"OFFLINE (this device)";
+}
 const store={all(){try{return JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){return{}}},
- put(d){const o=this.all();o[d.no]=d;localStorage.setItem(KEY,JSON.stringify(o))},
- del(n){const o=this.all();delete o[n];localStorage.setItem(KEY,JSON.stringify(o))}};
+ put(d){const o=this.all();o[d.no]=d;localStorage.setItem(KEY,JSON.stringify(o)); cloudPut(d).then(r=>{ if($("msg")&&!r.ok&&cloudUrl()) $("msg").textContent+=" (Saved on device; will sync when online.)"; });},
+ del(n){const o=this.all();delete o[n];localStorage.setItem(KEY,JSON.stringify(o)); cloudDel(n);}};
 function dlBlob(name,type,data){const a=document.createElement("a"),u=URL.createObjectURL(new Blob([data],{type}));a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000)}
 function show(d){
  const t=qrText(d),bytes=u8(t).length,ok=bytes<=2800;
@@ -1507,20 +1539,26 @@ function show(d){
  scrollTo(0,0);
 }
 let ALL=[];
-function showList(){
+async function showList(){
  $("form").hidden=true;$("view").hidden=true;$("listv").hidden=false;
- ALL=Object.values(store.all()).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.no||"").localeCompare(a.no||""));
+ // merge shared online reports with this-device reports
+ let merged=store.all();
+ const remote=await cloudAll();
+ if(remote){ Object.values(remote).forEach(d=>{ if(d&&d.no&&Array.isArray(d.eq)) merged[d.no]=d; });
+   try{ localStorage.setItem(KEY,JSON.stringify(merged)); }catch(e){} }
+ ALL=Object.values(merged).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.no||"").localeCompare(a.no||""));
   $("listv").innerHTML=`<div class="card top"><div class="brand"><img src="logo.png" srcset="logo.png 1x, logo@2x.png 2x" sizes="(max-width:480px) 78vw, 340px" width="340" height="200" decoding="async" alt="Santa Clara Shipping Corp. logo"><div class="brand-text"><h1>Saved reports</h1><small>Santa Clara Shipping Corp.</small></div></div><div class="mu">${ALL.length} report(s) on this device. Tap a row to open it.</div>
  <label>Search by site, technician, or report no.</label><input id="q" placeholder="Type to filter">
  <div class="act" style="margin-top:12px"><button class="p" onclick="location.reload()">New report</button><button id="bk">Backup all (file)</button><button id="rs">Restore from backup</button><input id="rf" type="file" accept=".json,application/json" hidden></div>
  <p class="mu" id="lmsg">Saved reports live in this browser. Clearing browser data deletes them, so make a backup now and then.</p></div>
  <div class="card"><div class="scroll"><table id="lt"></table></div></div>`;
- $("q").oninput=drawList;drawList();
+  $("q").oninput=drawList;drawList();
  $("bk").onclick=()=>dlBlob("service-reports-backup.json","application/json",JSON.stringify(store.all()));
  $("rs").onclick=()=>$("rf").click();
+ // restore-to-cloud: push local backup entries online too
  $("rf").onchange=async e=>{const f=e.target.files[0];if(!f)return;
   try{const o=JSON.parse(await f.text());let n=0;const cur=store.all();
-   Object.values(o).forEach(d=>{if(d&&d.no&&Array.isArray(d.eq)){cur[d.no]=d;n++}});
+   Object.values(o).forEach(d=>{if(d&&d.no&&Array.isArray(d.eq)){cur[d.no]=d;n++; cloudPut(d);}});
    localStorage.setItem(KEY,JSON.stringify(cur));showList();$("lmsg").textContent="Restored "+n+" report(s)."}
   catch(x){$("lmsg").textContent="That file could not be read as a backup."}};
 }
@@ -1582,6 +1620,34 @@ let sess='0';try{sess=sessionStorage.getItem(SESSION_KEY);}catch(e){}
 if(sess==='1'){enterApp(getAuth().u);}else{$('login').hidden=false;$('app').hidden=true;}
 }
 initAuth();
+function initCloud(){
+ cloudUI();
+ if($("cloud_connect")) $("cloud_connect").onclick=async ()=>{
+   const u=($("cloud_url").value||"").trim().replace(/\/+$/,"");
+   if(!u || !/^https:\/\//i.test(u)){ $("cloud_msg").textContent="Paste a valid https:// database URL first."; return; }
+   $("cloud_msg").textContent="Connecting…";
+   try{ const r=await fetch(u+"/reports.json"); if(!r.ok) throw 0;
+     cloudSet(u); cloudUI(); $("cloud_msg").textContent="Connected! New reports will sync to the shared list.";
+     // push existing device reports up so team sees them
+     const all=store.all(); let n=0;
+     for(const k of Object.keys(all)){ const res=await cloudPut(all[k]); if(res.ok) n++; }
+     $("cloud_msg").textContent+=" Uploaded "+n+" existing report(s).";
+   }catch(e){ $("cloud_msg").textContent="Could not connect. Check the URL and Firebase Rules (must allow read/write)."; }
+ };
+ if($("cloud_sync")) $("cloud_sync").onclick=async ()=>{
+   if(!cloudUrl()){ $("cloud_msg").textContent="Connect first."; return; }
+   $("cloud_msg").textContent="Syncing…";
+   const remote=await cloudAll();
+   if(remote===null){ $("cloud_msg").textContent="Sync failed — check internet / Rules."; return; }
+   const merged=store.all(); let n=0;
+   Object.values(remote).forEach(d=>{ if(d&&d.no&&Array.isArray(d.eq)){ if(!merged[d.no]) n++; merged[d.no]=d; }});
+   Object.values(merged).forEach(d=>{ cloudPut(d); });
+   try{ localStorage.setItem(KEY,JSON.stringify(merged)); }catch(e){}
+   cloudUI(); $("cloud_msg").textContent="Sync done. "+Object.keys(merged).length+" total ("+n+" new from team).";
+ };
+ if($("cloud_off")) $("cloud_off").onclick=()=>{ cloudSet(""); if($("cloud_url")) $("cloud_url").value=""; cloudUI(); $("cloud_msg").textContent="Disconnected. Reports now save on this device only."; };
+}
+initCloud();
 function initCarousels(){
   document.querySelectorAll('.brand').forEach(function(brand){
     var car=brand.querySelector('.logo-carousel'); if(!car) return;

@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://pcsceddieboy.github.io/ServiceReportData/IT_Service_Report_App.html
