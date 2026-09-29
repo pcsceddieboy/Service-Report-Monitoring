@@ -1562,13 +1562,18 @@ function fbInit(){
 
 function fbPut(report){
   const base=FIREBASE_URL.replace(/\/$/,"");
-  fetch(`${base}/reports/${encodeURIComponent(report.no)}.json`,{method:"PUT",body:JSON.stringify(report)}).catch(()=>{});
+  return fetch(`${base}/reports/${encodeURIComponent(report.no)}.json`,{method:"PUT",body:JSON.stringify(report)}).then(r=>{
+    if(!r.ok) throw new Error("Put failed: "+r.status);
+  }).catch(e=>{console.error("Firebase put error:",e); throw e});
 }
 
 function fbDel(no){
   const base=FIREBASE_URL.replace(/\/$/,"");
   return fetch(`${base}/reports/${encodeURIComponent(no)}.json`,{method:"DELETE"}).then(r=>{
-    if(!r.ok) throw new Error("Delete failed: "+r.status);
+    if(!r.ok){
+      if(r.status===401||r.status===403) throw new Error("Permission denied - check Firebase Rules (need .write: true on /reports)");
+      throw new Error("Delete failed: "+r.status);
+    }
   }).catch(e=>{console.error("Firebase delete error:",e); throw e});
 }
 
@@ -1585,7 +1590,7 @@ const store={all(){
 put(d){
   if(fbDb){
     fbDb.reports[d.no]=d; fbDb.emit();
-    fbPut(d);
+    fbPut(d).catch(e=>{console.error("Sync put failed:",e);});
   }else{
     const o=this.all(); o[d.no]=d; localStorage.setItem(KEY,JSON.stringify(o));
   }
