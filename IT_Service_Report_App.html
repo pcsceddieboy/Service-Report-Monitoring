@@ -185,6 +185,9 @@ button:active{transform:scale(.98)}
 <div class="card"><h2>Overall remarks</h2><textarea id="rem"></textarea>
 <div class="g2"><div><label>Client representative</label><input id="client"></div><div></div></div></div>
 <div class="act"><button class="p" id="submit">Submit and generate QR</button></div>
+<div class="card" id="syncCard" style="margin-top:14px"><h2>Online shared storage</h2>
+<div class="mu">Reports sync automatically to the team Firebase database.</div>
+<div class="mu" id="fbMsg">Connecting...</div></div>
 <p class="mu" id="msg"></p>
 </div>
 <div id="view" hidden></div>
@@ -1523,11 +1526,82 @@ function drawQR(text){
  $("dlqr").onclick=()=>{const a=document.createElement("a");a.href=c.toDataURL("image/png");a.download="service-report-qr.png";a.click()};
 }
 const KEY="sr_reports_v1";
-const store={all(){try{return JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){return{}}},
- put(d){const o=this.all();o[d.no]=d;localStorage.setItem(KEY,JSON.stringify(o))},
- get(n){return this.all()[n]},
- del(n){const o=this.all();delete o[n];localStorage.setItem(KEY,JSON.stringify(o))}};
+// ===== REPLACE THIS WITH YOUR FIREBASE REALTIME DATABASE URL =====
+const FIREBASE_URL = "https://console.firebase.google.com/project/servicereport-b0a3d/storage";
+let fbDb=null;
+
+function fbInit(){
+  fbDb={reports:{},_listeners:[],on(cb){this._listeners.push(cb)},emit(){this._listeners.forEach(cb=>cb(this.reports))}};
+  const base=FIREBASE_URL.replace(/\/$/,"");
+  fetch(`${base}/reports.json`).then(r=>r.json()).then(data=>{
+    fbDb.reports=data||{}; fbDb.emit();
+    // Auto-sync: push any local-only reports to Firebase
+    const stored=localStorage.getItem("fb_"+KEY);
+    if(stored){
+      try{
+        const local=JSON.parse(stored);
+        Object.values(local).forEach(r=>fbPut(r));
+        localStorage.removeItem("fb_"+KEY);
+      }catch(e){}
+    }
+    if($("fbMsg")) $("fbMsg").textContent = "Online - synced with team";
+  }).catch(e=>{
+    fbDb.reports={}; fbDb.emit();
+    if($("fbMsg")) $("fbMsg").textContent = "Offline - using local storage";
+  });
+}
+
+function fbPut(report){
+  const base=FIREBASE_URL.replace(/\/$/,"");
+  fetch(`${base}/reports/${encodeURIComponent(report.no)}.json`,{method:"PUT",body:JSON.stringify(report)}).catch(()=>{});
+}
+
+function fbDel(no){
+  const base=FIREBASE_URL.replace(/\/$/,"");
+  fetch(`${base}/reports/${encodeURIComponent(no)}.json`,{method:"DELETE"}).catch(()=>{});
+}
+
+const store={all(){
+  if(fbDb && Object.keys(fbDb.reports).length){
+    return fbDb.reports;
+  }
+  try{return JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){return{}}
+},
+put(d){
+  if(fbDb){
+    fbDb.reports[d.no]=d; fbDb.emit();
+    fbPut(d);
+  }else{
+    const o=this.all(); o[d.no]=d; localStorage.setItem(KEY,JSON.stringify(o));
+    const stored=localStorage.getItem("fb_"+KEY);
+    if(stored){
+      try{const local=JSON.parse(stored);local[d.no]=d;localStorage.setItem("fb_"+KEY,JSON.stringify(local))}catch(e){}
+    }
+  }
+},
+get(n){
+  if(fbDb && fbDb.reports[n]) return fbDb.reports[n];
+  return this.all()[n];
+},
+del(n){
+  if(fbDb){
+    delete fbDb.reports[n]; fbDb.emit();
+    fbDel(n);
+  }else{
+    const o=this.all(); delete o[n]; localStorage.setItem(KEY,JSON.stringify(o));
+  }
+}};
 function dlBlob(name,type,data){const a=document.createElement("a"),u=URL.createObjectURL(new Blob([data],{type}));a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000)}
+function printReport(no){
+ const d=store.get(no); if(!d){alert("Report not found.");return}
+ closeSide();
+ const w=window.open("","_blank");
+ if(!w){alert("Please allow popups to print.");return}
+ const rows=(arr)=>arr&&arr.length?arr.map((x,i)=>(i+1)+". ["+x.sys+(x.lvl?", "+x.lvl:"")+"] "+x.text).join("<br>"):"None recorded.";
+ const eq=d.eq.map(r=>`<tr><td>${esc(r.sys)}</td><td>${esc(r.total)}</td><td>${esc(r.ok)}</td><td>${esc(r.bad)}</td><td>${esc(r.work)}</td></tr>`).join("");
+ w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(d.no)}</title><style>body{font-family:Segoe UI,Arial,sans-serif;padding:24px;color:#111}h1{font-size:22px;margin:0}h2{font-size:15px;color:#0b4d6e;border-bottom:2px solid #0b4d6e;padding-bottom:4px}table{border-collapse:collapse;width:100%;margin:8px 0}th,td{border:1px solid #999;padding:6px;font-size:13px;text-align:left}th{background:#0b4d6e;color:#fff}.mu{color:#555;font-size:12px}.sig{display:flex;gap:40px;margin-top:30px;text-align:center}.sig div{flex:1;border-top:1px solid #000;padding-top:4px}</style></head><body><h1>IT Service Report</h1><div class="mu">Santa Clara Shipping Corp. · ${esc(d.no)} · ${esc(d.stype)}</div><h2>Visit details</h2><table><tr><th>Client / Site</th><td>${esc(d.site)}</td><th>Date</th><td>${esc(d.date)}</td></tr><tr><th>Address</th><td>${esc(d.addr)}</td><th>Site contact</th><td>${esc(d.contact)}</td></tr><tr><th>Technician</th><td>${esc(d.tech)}</td><th>Service type</th><td>${esc(d.stype)}</td></tr></table><h2>Equipment summary</h2><table><tr><th>System</th><th>Total</th><th>Working</th><th>Faulty</th><th>Work performed</th></tr>${eq}</table><h2>Findings</h2><p>${rows(d.find)}</p><h2>Suggestions</h2><p>${rows(d.sug)}</p><h2>Recommendations</h2><p>${rows(d.rec)}</p><h2>Overall remarks</h2><p>${esc(d.rem)||"None."}</p><div class="sig"><div>${esc(d.tech)}<br>Technician</div><div>${esc(d.client)}<br>Client representative</div></div><script>onload=()=>{print();}<\/script></body></html>`);
+ w.document.close();
+}
 function show(d,editNo){
  const t=qrText(d),bytes=u8(t).length,ok=bytes<=2800;
  render(d,ok,editNo);
@@ -1546,7 +1620,7 @@ function refreshSide(activeNo){
  const rows=all.filter(r=>!q||[r.site,r.tech,r.no,r.stype].join(" ").toLowerCase().includes(q));
  if($("sidecount"))$("sidecount").textContent=all.length+" report(s)";
  if(!$("sidelist"))return;
- $("sidelist").innerHTML=rows.length?rows.map(r=>`<div class="side-item${r.no===activeNo?" active":""}" data-no="${esc(r.no)}"><div class="t">${esc(r.site||"(no site)")}</div><div class="s">${esc(r.date||"")} · ${esc(r.tech||"")} · ${esc(r.no||"")}<br>${esc(r.stype||"")} · ${(r.find||[]).length} issue(s)</div><div class="btns"><button class="sview" data-no="${esc(r.no)}">Open</button><button class="sedit" data-no="${esc(r.no)}">Edit</button><button class="sdel" data-no="${esc(r.no)}">Del</button></div></div>`).join(""):'<p class="mu" style="padding:8px">No submitted reports yet.</p>';
+ $("sidelist").innerHTML=rows.length?rows.map(r=>`<div class="side-item${r.no===activeNo?" active":""}" data-no="${esc(r.no)}"><div class="t">${esc(r.site||"(no site)")}</div><div class="s">${esc(r.date||"")} · ${esc(r.tech||"")} · ${esc(r.no||"")}<br>${esc(r.stype||"")} · ${(r.find||[]).length} issue(s)</div><div class="btns"><button class="sview" data-no="${esc(r.no)}">Open</button><button class="sedit" data-no="${esc(r.no)}">Edit</button><button class="sdel" data-no="${esc(r.no)}">Del</button></div><div class="btns"><button class="sprint" data-no="${esc(r.no)}">Print</button><button class="sxl" data-no="${esc(r.no)}">Excel</button></div></div>`).join(""):'<p class="mu" style="padding:8px">No submitted reports yet.</p>';
  $("sidelist").querySelectorAll(".side-item").forEach(it=>it.onclick=e=>{
    if(e.target.closest("button"))return;
    const d=store.get(it.dataset.no); if(!d)return;
@@ -1555,7 +1629,9 @@ function refreshSide(activeNo){
  $("sidelist").querySelectorAll(".sview").forEach(b=>b.onclick=e=>{e.stopPropagation();const d=store.get(b.dataset.no);if(d){closeSide();show(d);}});
  $("sidelist").querySelectorAll(".sedit").forEach(b=>b.onclick=e=>{e.stopPropagation();closeSide();editReport(b.dataset.no);});
  $("sidelist").querySelectorAll(".sdel").forEach(b=>b.onclick=e=>{e.stopPropagation();
-   if(confirm("Delete report "+b.dataset.no+"? This cannot be undone.")){try{store.del(b.dataset.no)}catch(x){}refreshSide();drawList();}});
+  if(confirm("Delete report "+b.dataset.no+"? This cannot be undone.")){try{store.del(b.dataset.no)}catch(x){}refreshSide();if($("lt"))drawList();}});
+ $("sidelist").querySelectorAll(".sprint").forEach(b=>b.onclick=e=>{e.stopPropagation();printReport(b.dataset.no);});
+ $("sidelist").querySelectorAll(".sxl").forEach(b=>b.onclick=e=>{e.stopPropagation();const d=store.get(b.dataset.no);if(d)dlBlob(d.no+".xlsx","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",buildXlsx(d));});
 }
 function openSide(){refreshSide(EDIT_NO);$("sidepanel").classList.add("open");$("sidebackdrop").classList.add("open");}
 function closeSide(){$("sidepanel").classList.remove("open");$("sidebackdrop").classList.remove("open");}
@@ -1578,7 +1654,7 @@ function showList(){
  ALL=Object.values(store.all()).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.no||"").localeCompare(a.no||""));
   $("listv").innerHTML=`<div class="card top"><div class="brand"><img src="logo.png" srcset="logo.png 1x, logo@2x.png 2x" sizes="(max-width:480px) 78vw, 340px" width="340" height="200" decoding="async" alt="Santa Clara Shipping Corp. logo"><div class="brand-text"><h1>Saved reports</h1><small>Santa Clara Shipping Corp.</small></div></div><div class="mu">${ALL.length} report(s) on this device. Tap a row to open it.</div>
  <label>Search by site, technician, or report no.</label><input id="q" placeholder="Type to filter">
- <div class="act" style="margin-top:12px"><button class="p" id="newrep2">New report</button><button id="bk">Backup all (file)</button><button id="rs">Restore from backup</button><input id="rf" type="file" accept=".json,application/json" hidden></div>
+ <div class="act" style="margin-top:12px"><button class="p" id="newrep2">New report</button><button id="exportAll">Export all Excel</button><button id="printAll">Print all</button><button id="bk">Backup all (file)</button><button id="rs">Restore from backup</button><input id="rf" type="file" accept=".json,application/json" hidden></div>
  <p class="mu" id="lmsg">Saved reports live in this browser. Clearing browser data deletes them, so make a backup now and then.</p></div>
  <div class="card"><div class="scroll"><table id="lt"></table></div></div>`;
   $("q").oninput=drawList;drawList();
@@ -1645,6 +1721,10 @@ $("submit").onclick=()=>{
 };
 initSide();
 if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});}
+
+// ===== Auto-initialize Firebase (hardcoded URL) =====
+fbInit();
+if(fbDb){fbDb.on(()=>{refreshSide(EDIT_NO); if($("lt"))drawList();});}
 // ===== Admin login (handlers attached after $ is defined) =====
 function initAuth(){
 const AUTH_KEY='sr_auth_v1', SESSION_KEY='sr_session_v1';
