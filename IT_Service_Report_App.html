@@ -1582,11 +1582,15 @@ function fbDel(no){
 }
 
 const store={all(){
-  if(fbDb && Object.keys(fbDb.reports).length){
+  if(fbDb && fbDb._loaded){
+    // Merge localStorage reports that aren't in Firebase yet
+    try{
+      const local=JSON.parse(localStorage.getItem(KEY)||"{}");
+      Object.keys(local).forEach(k=>{if(!fbDb.reports[k]) fbDb.reports[k]=local[k];});
+    }catch(e){}
     return fbDb.reports;
   }
   if(fbDb && !fbDb._loaded){
-    // Firebase loading - return empty to avoid stale localStorage
     return {};
   }
   try{return JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){return{}}
@@ -1605,8 +1609,17 @@ get(n){
 },
 del(n){
   if(fbDb){
-    delete fbDb.reports[n]; fbDb.emit();
-    fbDel(n);
+    // Try Firebase first
+    const inFirebase = fbDb.reports[n];
+    delete fbDb.reports[n]; 
+    fbDb.emit();
+    fbDel(n).catch(()=>{}).finally(()=>{
+      // Also clean localStorage regardless
+      try{
+        const o=JSON.parse(localStorage.getItem(KEY)||"{}");
+        if(o[n]){ delete o[n]; localStorage.setItem(KEY,JSON.stringify(o)); }
+      }catch(e){}
+    });
   }else{
     const o=this.all(); delete o[n]; localStorage.setItem(KEY,JSON.stringify(o));
   }
