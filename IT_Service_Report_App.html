@@ -1569,8 +1569,12 @@ function fbPut(report){
 
 function fbDel(no){
   const base=FIREBASE_URL.replace(/\/$/,"");
-  return fetch(`${base}/reports/${encodeURIComponent(no)}.json`,{method:"DELETE"}).then(r=>{
+  const url=`${base}/reports/${encodeURIComponent(no)}.json`;
+  console.log("Firebase DELETE:", url);
+  return fetch(url,{method:"DELETE"}).then(r=>{
+    console.log("Firebase DELETE response:", r.status);
     if(!r.ok){
+      if(r.status===404) return; // Already gone - OK
       if(r.status===401||r.status===403) throw new Error("Permission denied - check Firebase Rules (need .write: true on /reports)");
       throw new Error("Delete failed: "+r.status);
     }
@@ -1646,8 +1650,18 @@ function refreshSide(activeNo){
  $("sidelist").querySelectorAll(".sedit").forEach(b=>b.onclick=e=>{e.stopPropagation();closeSide();editReport(b.dataset.no);});
  $("sidelist").querySelectorAll(".sdel").forEach(b=>b.onclick=e=>{e.stopPropagation();
   if(confirm("Delete report "+b.dataset.no+"? This cannot be undone.")){
-    try{store.del(b.dataset.no); refreshSide(); if($("lt"))drawList();}
-    catch(x){alert("Delete failed: "+x.message); console.error(x);}
+    const no=b.dataset.no;
+    console.log("Deleting report:", no);
+    try{
+      store.del(no); 
+      refreshSide(); 
+      if($("lt"))drawList();
+      console.log("Delete successful for:", no);
+    }
+    catch(x){
+      console.error("Delete failed for:", no, x);
+      alert("Delete failed for "+no+": "+x.message);
+    }
   }
 });
  $("sidelist").querySelectorAll(".sprint").forEach(b=>b.onclick=e=>{e.stopPropagation();printReport(b.dataset.no);});
@@ -1697,8 +1711,10 @@ function drawList(){
  $("lt").querySelectorAll(".lr").forEach(tr=>tr.onclick=()=>{const d=ALL.find(x=>x.no===tr.dataset.no);if(d)show(d)});
  $("lt").querySelectorAll(".del").forEach(b=>b.onclick=e=>{e.stopPropagation();
   if(confirm("Delete report "+b.dataset.no+"? This cannot be undone.")){
-    try{store.del(b.dataset.no); refreshSide(); showList();}
-    catch(x){alert("Delete failed: "+x.message); console.error(x);}
+    const no=b.dataset.no;
+    console.log("Deleting report:", no);
+    try{store.del(no); refreshSide(); showList(); console.log("Delete successful for:", no);}
+    catch(x){console.error("Delete failed for:", no, x); alert("Delete failed for "+no+": "+x.message);}
   }
 });
  $("lt").querySelectorAll(".edit").forEach(b=>b.onclick=e=>{e.stopPropagation();editReport(b.dataset.no);});
