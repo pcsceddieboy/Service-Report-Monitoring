@@ -1497,7 +1497,7 @@ function sect(t,items,lvl){
 }
 function render(d,qrOn,editNo){
  $("form").hidden=true;$("listv").hidden=true;$("view").hidden=false;
- $("view").innerHTML=`<div class="card top"><div class="brand"><img src="logo.png" srcset="logo.png 1x, logo@2x.png 2x" sizes="(max-width:480px) 78vw, 340px" width="340" height="200" decoding="async" alt="Santa Clara Shipping Corp. logo"><div class="brand-text"><h1>IT Service Report</h1><small>Santa Clara Shipping Corp.</small></div></div><div class="mu">${esc(d.no)} · ${esc(d.stype)}${editNo?" · Editing":""}</div>
+ $("view").innerHTML=`<div class="card top"><div class="brand"><img src="logo.png" width="340" height="200" decoding="async" alt="Santa Clara Shipping Corp. logo"><div class="brand-text"><h1>IT Service Report</h1><small>Santa Clara Shipping Corp.</small></div></div><div class="mu">${esc(d.no)} · ${esc(d.stype)}${editNo?" · Editing":""}</div>
  <div class="g2"><div><label>Client / Site</label>${esc(d.site)}</div><div><label>Date</label>${esc(d.date)}</div><div><label>Address</label>${esc(d.addr)}</div><div><label>Site contact</label>${esc(d.contact)}</div><div><label>Technician</label>${esc(d.tech)}</div></div></div>
  <div class="card"><h2>Equipment summary</h2><div class="scroll"><table><tr><th>System</th><th>Total</th><th>Working</th><th>Faulty</th><th>Work performed</th></tr>${d.eq.map(r=>`<tr><td>${r.sys}</td><td>${esc(r.total)}</td><td>${esc(r.ok)}</td><td>${esc(r.bad)}</td><td>${esc(r.work)}</td></tr>`).join("")}</table></div></div>
  <div class="card">${sect("Findings (issues indicated)",d.find,"Severity")}</div>
@@ -1672,7 +1672,7 @@ function initSide(){
 function showList(){
  $("form").hidden=true;$("view").hidden=true;$("listv").hidden=false;
  ALL=Object.values(store.all()).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.no||"").localeCompare(a.no||""));
-  $("listv").innerHTML=`<div class="card top"><div class="brand"><img src="logo.png" srcset="logo.png 1x, logo@2x.png 2x" sizes="(max-width:480px) 78vw, 340px" width="340" height="200" decoding="async" alt="Santa Clara Shipping Corp. logo"><div class="brand-text"><h1>Saved reports</h1><small>Santa Clara Shipping Corp.</small></div></div><div class="mu">${ALL.length} report(s) on this device. Tap a row to open it.</div>
+  $("listv").innerHTML=`<div class="card top"><div class="brand"><img src="logo.png" width="340" height="200" decoding="async" alt="Santa Clara Shipping Corp. logo"><div class="brand-text"><h1>Saved reports</h1><small>Santa Clara Shipping Corp.</small></div></div><div class="mu">${ALL.length} report(s) on this device. Tap a row to open it.</div>
  <label>Search by site, technician, or report no.</label><input id="q" placeholder="Type to filter">
  <div class="act" style="margin-top:12px"><button class="p" id="newrep2">New report</button><button id="exportAll">Export all Excel</button><button id="printAll">Print all</button><button id="bk">Backup all (file)</button><button id="rs">Restore from backup</button><input id="rf" type="file" accept=".json,application/json" hidden></div>
  <p class="mu" id="lmsg">Saved reports live in this browser. Clearing browser data deletes them, so make a backup now and then.</p></div>
