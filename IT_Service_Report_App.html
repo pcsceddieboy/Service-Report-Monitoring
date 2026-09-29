@@ -1531,10 +1531,12 @@ const FIREBASE_URL = "https://servicereport-b0a3d-default-rtdb.asia-southeast1.f
 let fbDb=null;
 
 function fbInit(){
-  fbDb={reports:{},_listeners:[],on(cb){this._listeners.push(cb)},emit(){this._listeners.forEach(cb=>cb(this.reports))}};
+  fbDb={reports:{},_loaded:false,_listeners:[],on(cb){this._listeners.push(cb)},emit(){this._listeners.forEach(cb=>cb(this.reports))}};
   const base=FIREBASE_URL.replace(/\/$/,"");
   fetch(`${base}/reports.json`).then(r=>r.json()).then(data=>{
-    fbDb.reports=data||{}; fbDb.emit();
+    fbDb.reports=data||{}; 
+    fbDb._loaded=true;
+    fbDb.emit();
     // Auto-sync: push any local-only reports to Firebase
     const stored=localStorage.getItem("fb_"+KEY);
     if(stored){
@@ -1545,9 +1547,16 @@ function fbInit(){
       }catch(e){}
     }
     if($("fbMsg")) $("fbMsg").textContent = "Online - synced with team";
+    // Refresh UI now that Firebase is loaded
+    refreshSide(EDIT_NO); 
+    if($("lt")) drawList();
   }).catch(e=>{
-    fbDb.reports={}; fbDb.emit();
+    fbDb.reports={}; 
+    fbDb._loaded=true;
+    fbDb.emit();
     if($("fbMsg")) $("fbMsg").textContent = "Offline - using local storage";
+    refreshSide(EDIT_NO);
+    if($("lt")) drawList();
   });
 }
 
@@ -1565,6 +1574,10 @@ const store={all(){
   if(fbDb && Object.keys(fbDb.reports).length){
     return fbDb.reports;
   }
+  if(fbDb && !fbDb._loaded){
+    // Firebase loading - return empty to avoid stale localStorage
+    return {};
+  }
   try{return JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){return{}}
 },
 put(d){
@@ -1573,10 +1586,6 @@ put(d){
     fbPut(d);
   }else{
     const o=this.all(); o[d.no]=d; localStorage.setItem(KEY,JSON.stringify(o));
-    const stored=localStorage.getItem("fb_"+KEY);
-    if(stored){
-      try{const local=JSON.parse(stored);local[d.no]=d;localStorage.setItem("fb_"+KEY,JSON.stringify(local))}catch(e){}
-    }
   }
 },
 get(n){
@@ -1724,7 +1733,6 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.s
 
 // ===== Auto-initialize Firebase (hardcoded URL) =====
 fbInit();
-if(fbDb){fbDb.on(()=>{refreshSide(EDIT_NO); if($("lt"))drawList();});}
 // ===== Admin login (handlers attached after $ is defined) =====
 function initAuth(){
 const AUTH_KEY='sr_auth_v1', SESSION_KEY='sr_session_v1';
