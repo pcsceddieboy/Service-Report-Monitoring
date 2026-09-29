@@ -1790,7 +1790,7 @@ function initAuth(){
 const AUTH_KEY='sr_auth_v1', SESSION_KEY='sr_session_v1';
 function getAuth(){try{const a=JSON.parse(localStorage.getItem(AUTH_KEY));if(a&&a.u&&a.p)return a;}catch(e){}return{u:'admin',p:'admin123'};}
 function setAuth(u,p){localStorage.setItem(AUTH_KEY,JSON.stringify({u,p}));}
-function enterApp(u){$('login').hidden=true;$('app').hidden=false;$('who').textContent=u;try{sessionStorage.setItem(SESSION_KEY,'1');}catch(e){}refreshSide(EDIT_NO);}
+function enterApp(u){$('login').hidden=true;$('app').hidden=false;$('who').textContent=u;try{sessionStorage.setItem(SESSION_KEY,'1');}catch(e){}refreshSide(EDIT_NO); initCarousels();}
 function exitApp(){try{sessionStorage.removeItem(SESSION_KEY);}catch(e){}$('app').hidden=true;$('login').hidden=false;$('lg_p').value='';$('lg_err').textContent='';$('lg_u').focus();}
 function tryLogin(){
   const u=$('lg_u').value.trim(), p=$('lg_p').value, a=getAuth();
@@ -1825,13 +1825,19 @@ let sess='0';try{sess=sessionStorage.getItem(SESSION_KEY);}catch(e){}
 if(sess==='1'){enterApp(getAuth().u);}else{$('login').hidden=false;$('app').hidden=true;}
 }
 initAuth();
+// Initialize carousel on DOM ready and after login
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initCarousels); else initCarousels();
 function initCarousels(){
+  console.log('initCarousels called');
   document.querySelectorAll('.brand').forEach(function(brand){
-    var car=brand.querySelector('.logo-carousel'); if(!car) return;
+    var car=brand.querySelector('.logo-carousel'); if(!car){console.log('No .logo-carousel in brand'); return;}
     var track=car.querySelector('.logo-track');
+    if(!track){console.log('No .logo-track'); return;}
+    console.log('Carousel found, children:', track.children.length);
     var dots=Array.prototype.slice.call(brand.querySelectorAll('.logo-dots button'));
     var prev=car.querySelector('.logo-arrow.prev'), next=car.querySelector('.logo-arrow.next');
     var i=0, n=track.children.length, t=null;
+    if(n<2){console.log('Only 1 image, disabling carousel'); if(prev) prev.style.display='none'; if(next) next.style.display='none'; dots.forEach(d=>d.style.display='none'); return;}
     function go(k){ i=(k+n)%n; track.style.transform='translateX(-'+(i*100)+'%)';
       dots.forEach(function(d,j){ d.classList.toggle('on', j===i); }); restart(); }
     function restart(){ if(t) clearInterval(t); t=setInterval(function(){ i=(i+1)%n; track.style.transform='translateX(-'+(i*100)+'%)'; dots.forEach(function(d,j){ d.classList.toggle('on', j===i); }); },3500); }
