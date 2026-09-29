@@ -15,8 +15,6 @@
 
 <style>
 :root{--bg:#eef0f7;--card:rgba(255,255,255,.9);--tx:#1f1f2e;--mu:#5f5f76;--ac:#0b4d6e;--ac2:#0fa3a3;--bd:#dde1ec;--in:#ffffff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--shadow:0 8px 28px rgba(11,77,110,.12)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1620;--card:rgba(30,42,56,.88);--tx:#ece9f5;--mu:#a9a3bb;--ac:#4dd0e1;--ac2:#0fa3a3;--bd:#33465c;--in:#1d2c3d;--shadow:0 8px 28px rgba(0,0,0,.35)}}
-:root[data-theme="dark"]{--bg:#0d1620;--card:rgba(30,42,56,.88);--tx:#ece9f5;--mu:#a9a3bb;--ac:#4dd0e1;--ac2:#0fa3a3;--bd:#33465c;--in:#1d2c3d;--shadow:0 8px 28px rgba(0,0,0,.35)}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box}
 img{max-width:100%;height:auto}
@@ -24,12 +22,6 @@ body{margin:0;background:var(--bg);color:var(--tx);font-family:"Segoe UI",Arial,
 /* ===== Blurred logo background ===== */
 body::before{content:"";position:fixed;inset:0;z-index:-2;background:var(--bg) url("logoo.png") center 12vh / min(92vw,620px) auto no-repeat;filter:blur(14px) saturate(1.05);opacity:.28;pointer-events:none;transform:scale(1.08)}
 body::after{content:"";position:fixed;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(238,240,247,.82),rgba(238,240,247,.9) 40%,rgba(238,240,247,.94));pointer-events:none}
-@media (prefers-color-scheme:dark){
-:root:not([data-theme="light"]) body::after{background:linear-gradient(180deg,rgba(13,22,32,.72),rgba(13,22,32,.86) 40%,rgba(13,22,32,.92))}
-:root:not([data-theme="light"]) body::before{opacity:.22}
-}
-:root[data-theme="dark"] body::after{background:linear-gradient(180deg,rgba(13,22,32,.72),rgba(13,22,32,.86) 40%,rgba(13,22,32,.92))}
-:root[data-theme="dark"] body::before{opacity:.22}
 main{max-width:760px;margin:0 auto;padding:16px;position:relative;z-index:1}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:var(--shadow);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 .top{border-top:none;position:relative;overflow:hidden}
@@ -62,13 +54,6 @@ button:active{transform:scale(.98)}
 .mu{color:var(--mu);font-size:13px}
 .brand{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;margin:4px 0 12px}
 .brand img{width:clamp(220px,60vw,340px);height:auto;max-height:200px;object-fit:contain;background:transparent;border-radius:10px;padding:6px;box-shadow:none}
-/* ===== Dark mode logo adjustment ===== */
-:root[data-theme="dark"] .brand img,
-:root[data-theme="dark"] .logo-track img{filter:invert(0.9) hue-rotate(180deg) contrast(1.2);}
-@media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]) .brand img,
-  :root:not([data-theme="light"]) .logo-track img{filter:invert(0.9) hue-rotate(180deg) contrast(1.2);}
-}
 /* ===== Logo carousel - transparent background (logoo + penafrancia) ===== */
 .logo-carousel{position:relative;width:clamp(220px,60vw,340px);margin:0 auto;overflow:hidden;background:transparent;border-radius:10px;padding:6px;box-shadow:none}
 .logo-track{display:flex;transition:transform .6s ease}
@@ -174,7 +159,7 @@ button:active{transform:scale(.98)}
 </div>
 </div>
 <div id="app" hidden>
-<div class="topbar noprint"><span><button id="menubtn" title="Submitted reports">&#9776;</button> Logged in as <b id="who">admin</b></span><span class="rowbtn"><button id="themebtn" title="Toggle theme">&#9728;</button><button id="logout">Logout</button></span></div>
+<div class="topbar noprint"><span><button id="menubtn" title="Submitted reports">&#9776;</button> Logged in as <b id="who">admin</b></span><span class="rowbtn"><button id="logout">Logout</button></span></div>
 <div id="form">
 	
 <div class="card top">
@@ -1797,21 +1782,6 @@ $("submit").onclick=()=>{
 initSide();
 if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});}
 
-// ===== Theme toggle (dark/light mode) =====
-function initTheme(){
-  const saved=localStorage.getItem('theme');
-  const prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const dark=saved? saved==='dark' : prefersDark;
-  if(dark) document.documentElement.setAttribute('data-theme','dark');
-  else document.documentElement.removeAttribute('data-theme');
-  if($("themebtn")) $("themebtn").textContent = dark ? '&#9788;' : '&#9728;';
-  if($("themebtn")) $("themebtn").onclick=()=>{
-    const isDark=document.documentElement.hasAttribute('data-theme');
-    if(isDark){ document.documentElement.removeAttribute('data-theme'); localStorage.setItem('theme','light'); $("themebtn").textContent='&#9728;'; }
-    else{ document.documentElement.setAttribute('data-theme','dark'); localStorage.setItem('theme','dark'); $("themebtn").textContent='&#9788;'; }
-  };
-}
-initTheme();
 // ===== Auto-initialize Firebase (hardcoded URL) =====
 fbInit();
 fbDb.on(()=>{refreshSide(EDIT_NO); if($("lt"))drawList();});
