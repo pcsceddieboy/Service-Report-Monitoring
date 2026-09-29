@@ -138,7 +138,7 @@ button:active{transform:scale(.98)}
 </div>
 </div>
 <div id="app" hidden>
-<div class="topbar noprint"><span>Logged in as <b id="who">admin</b> · <span id="topbar_cloud">OFFLINE (this device)</span></span><span class="rowbtn"><button id="pwbtn">Change password</button><button id="logout">Logout</button></span></div>
+<div class="topbar noprint"><span>Logged in as <b id="who">admin</b></span><span class="rowbtn"><button id="pwbtn">Change password</button><button id="logout">Logout</button></span></div>
 <div id="form">
 	
 <div class="card top">
@@ -155,12 +155,6 @@ button:active{transform:scale(.98)}
 <div class="card"><h2>Recommendations</h2><div id="rec"></div><button data-add="rec">+ Add recommendation</button></div>
 <div class="card"><h2>Overall remarks</h2><textarea id="rem"></textarea>
 <div class="g2"><div><label>Client representative</label><input id="client"></div><div></div></div></div>
-<div class="card"><h2>Online shared storage</h2>
-<div class="mu" id="cloud_stat">Not connected — reports save on this device only.</div>
-<div class="g2"><div><label>Firebase database URL</label><input id="cloud_url" placeholder="https://your-project-default-rtdb.firebaseio.com"></div>
-<div><label>Status</label><div class="mu" id="cloud_msg" style="padding-top:12px">Paste URL then tap Connect.</div></div></div>
-<div class="act" style="margin-top:10px"><button type="button" class="p" id="cloud_connect">Connect shared storage</button><button type="button" id="cloud_sync">Sync now</button><button type="button" id="cloud_off">Disconnect</button></div>
-<p class="mu" style="margin:8px 0 0">Once connected, every submit saves to the shared online list so the whole IT team sees the same reports. Works offline too — it keeps a copy on this device.</p></div>
 <div class="act"><button class="p" id="submit">Submit and generate QR</button></div>
 <p class="mu" id="msg"></p>
 </div>
@@ -1461,17 +1455,17 @@ function addRow(k){
 document.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>addRow(b.dataset.add));
 ["find","sug","rec"].forEach(addRow);
 function list(k){return [...$(k).children].map(r=>{const e=r.querySelectorAll("select,input");return{sys:e[0].value,text:e[1].value.trim(),lvl:e[2]&&e[2].tagName=="SELECT"?e[2].value:""}}).filter(x=>x.text)}
-function collect(){
+function collect(no){
  const rows=[...$("eq").querySelectorAll("tr")].slice(1).map((r,i)=>{const v=[...r.querySelectorAll("input")].map(x=>x.value);return{sys:SYS[i],total:v[0],ok:v[1],bad:v[2],work:v[3]}});
- return{no:"SR-"+Date.now().toString(36).toUpperCase(),site:$("site").value,date:$("date").value,addr:$("addr").value,contact:$("contact").value,tech:$("tech").value,stype:$("stype").value,eq:rows,find:list("find"),sug:list("sug"),rec:list("rec"),rem:$("rem").value,client:$("client").value};
+ return{no:no||("SR-"+Date.now().toString(36).toUpperCase()),site:$("site").value,date:$("date").value,addr:$("addr").value,contact:$("contact").value,tech:$("tech").value,stype:$("stype").value,eq:rows,find:list("find"),sug:list("sug"),rec:list("rec"),rem:$("rem").value,client:$("client").value};
 }
 function sect(t,items,lvl){
  if(!items.length)return`<h2>${t}</h2><p class="mu">None recorded.</p>`;
  return`<h2>${t}</h2><div class="scroll"><table><tr><th>#</th><th>System</th><th>Details</th>${lvl?`<th>${lvl}</th>`:""}</tr>${items.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.sys)}</td><td>${esc(x.text)}</td>${lvl?`<td>${esc(x.lvl)}</td>`:""}</tr>`).join("")}</table></div>`;
 }
-function render(d,qrOn){
+function render(d,qrOn,editNo){
  $("form").hidden=true;$("listv").hidden=true;$("view").hidden=false;
- $("view").innerHTML=`<div class="card top"><div class="brand"><img src="logo.png" srcset="logo.png 1x, logo@2x.png 2x" sizes="(max-width:480px) 78vw, 340px" width="340" height="200" decoding="async" alt="Santa Clara Shipping Corp. logo"><div class="brand-text"><h1>IT Service Report</h1><small>Santa Clara Shipping Corp.</small></div></div><div class="mu">${esc(d.no)} · ${esc(d.stype)}</div>
+ $("view").innerHTML=`<div class="card top"><div class="brand"><img src="logo.png" srcset="logo.png 1x, logo@2x.png 2x" sizes="(max-width:480px) 78vw, 340px" width="340" height="200" decoding="async" alt="Santa Clara Shipping Corp. logo"><div class="brand-text"><h1>IT Service Report</h1><small>Santa Clara Shipping Corp.</small></div></div><div class="mu">${esc(d.no)} · ${esc(d.stype)}${editNo?" · Editing":""}</div>
  <div class="g2"><div><label>Client / Site</label>${esc(d.site)}</div><div><label>Date</label>${esc(d.date)}</div><div><label>Address</label>${esc(d.addr)}</div><div><label>Site contact</label>${esc(d.contact)}</div><div><label>Technician</label>${esc(d.tech)}</div></div></div>
  <div class="card"><h2>Equipment summary</h2><div class="scroll"><table><tr><th>System</th><th>Total</th><th>Working</th><th>Faulty</th><th>Work performed</th></tr>${d.eq.map(r=>`<tr><td>${r.sys}</td><td>${esc(r.total)}</td><td>${esc(r.ok)}</td><td>${esc(r.bad)}</td><td>${esc(r.work)}</td></tr>`).join("")}</table></div></div>
  <div class="card">${sect("Findings (issues indicated)",d.find,"Severity")}</div>
@@ -1480,7 +1474,7 @@ function render(d,qrOn){
  <div class="card"><h2>Overall remarks</h2><p>${esc(d.rem)||'<span class="mu">None.</span>'}</p>
  <div class="sig"><div>${esc(d.tech)||"&nbsp;"}<br>Technician</div><div>${esc(d.client)||"&nbsp;"}<br>Client representative</div></div></div>
  ${qrOn?`<div class="card qr"><h2>Scan to read this report</h2><canvas id="qrc"></canvas><div class="mu">Scanning shows the report as text on any phone. <span id="qrn"></span></div><button class="noprint" id="dlqr">Download QR image</button></div>`:""}
- <div class="act noprint"><button class="p" onclick="print()">Print / save PDF</button><button id="xl">Download Excel</button><button onclick="showList()">Saved reports</button><button onclick="location.reload()">New report</button></div>`;
+ <div class="act noprint"><button class="p" onclick="print()">Print / save PDF</button><button id="xl">Download Excel</button>${editNo?`<button id="edback">Back to edit</button>`:""}<button onclick="showList()">Saved reports</button><button id="newrep">New report</button></div>`;
 
 }
 const u8=t=>unescape(encodeURIComponent(t));
@@ -1500,83 +1494,88 @@ function drawQR(text){
  $("dlqr").onclick=()=>{const a=document.createElement("a");a.href=c.toDataURL("image/png");a.download="service-report-qr.png";a.click()};
 }
 const KEY="sr_reports_v1";
-const CLOUD_KEY="sr_cloud_v1";
-// Pre-fill your Firebase URL here later so the team doesn't type it.
-// Example: const DEFAULT_CLOUD_URL="https://it-service-report-default-rtdb.asia-southeast1.firebasedatabase.app";
-const DEFAULT_CLOUD_URL="";
-function cloudCfg(){try{return JSON.parse(localStorage.getItem(CLOUD_KEY)||"null")}catch(e){return null}}
-function cloudUrl(){const c=cloudCfg(); if(c&&c.url) return String(c.url).replace(/\/+$/,""); if(DEFAULT_CLOUD_URL) return String(DEFAULT_CLOUD_URL).replace(/\/+$/,""); return "";}
-function cloudSet(url){ if(url) localStorage.setItem(CLOUD_KEY,JSON.stringify({url:url.replace(/\/+$/,"")})); else localStorage.removeItem(CLOUD_KEY); }
-async function cloudPut(d){
-  const u=cloudUrl(); if(!u) return {ok:false,reason:"offline"};
-  try{ const r=await fetch(u+"/reports/"+encodeURIComponent(d.no)+".json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)});
-    if(!r.ok) throw 0; return {ok:true}; }catch(e){ return {ok:false,reason:"net"}; }
-}
-async function cloudAll(){
-  const u=cloudUrl(); if(!u) return null;
-  try{ const r=await fetch(u+"/reports.json"); if(!r.ok) throw 0; return (await r.json())||{}; }catch(e){ return null; }
-}
-async function cloudDel(n){
-  const u=cloudUrl(); if(!u) return false;
-  try{ const r=await fetch(u+"/reports/"+encodeURIComponent(n)+".json",{method:"DELETE"}); return r.ok; }catch(e){ return false; }
-}
-function cloudUI(){
-  const u=cloudUrl();
-  if($("cloud_url") && !(($("cloud_url").value||"").trim()) && u) $("cloud_url").value=u;
-  if($("cloud_stat")) $("cloud_stat").textContent=u?("Connected: "+u+" — new reports sync to the shared online list."):"Not connected — reports save on this device only.";
-  if($("topbar_cloud")) $("topbar_cloud").textContent=u?"ONLINE shared":"OFFLINE (this device)";
-}
 const store={all(){try{return JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){return{}}},
- put(d){const o=this.all();o[d.no]=d;localStorage.setItem(KEY,JSON.stringify(o)); cloudPut(d).then(r=>{ if($("msg")&&!r.ok&&cloudUrl()) $("msg").textContent+=" (Saved on device; will sync when online.)"; });},
- del(n){const o=this.all();delete o[n];localStorage.setItem(KEY,JSON.stringify(o)); cloudDel(n);}};
+ put(d){const o=this.all();o[d.no]=d;localStorage.setItem(KEY,JSON.stringify(o))},
+ get(n){return this.all()[n]},
+ del(n){const o=this.all();delete o[n];localStorage.setItem(KEY,JSON.stringify(o))}};
 function dlBlob(name,type,data){const a=document.createElement("a"),u=URL.createObjectURL(new Blob([data],{type}));a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000)}
-function show(d){
+function show(d,editNo){
  const t=qrText(d),bytes=u8(t).length,ok=bytes<=2800;
- render(d,ok);
+ render(d,ok,editNo);
  if(ok){try{drawQR(t);$("qrn").textContent="("+bytes+" characters used)"}catch(e){$("qrc").replaceWith("QR code could not be built.")}}
  else $("view").insertAdjacentHTML("beforeend",`<p class="mu noprint">Too long for a QR code (${bytes} characters, limit about 2800). The report is still saved and can be printed or exported.</p>`);
  $("xl").onclick=()=>dlBlob(d.no+".xlsx","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",buildXlsx(d));
+ if(editNo&&$("edback"))$("edback").onclick=()=>{editReport(editNo);};
+ if($("newrep"))$("newrep").onclick=()=>{clearForm();$("form").hidden=false;$("view").hidden=true;$("listv").hidden=true;scrollTo(0,0);};
  scrollTo(0,0);
 }
 let ALL=[];
-async function showList(){
+let EDIT_NO=null;
+function showList(){
  $("form").hidden=true;$("view").hidden=true;$("listv").hidden=false;
- // merge shared online reports with this-device reports
- let merged=store.all();
- const remote=await cloudAll();
- if(remote){ Object.values(remote).forEach(d=>{ if(d&&d.no&&Array.isArray(d.eq)) merged[d.no]=d; });
-   try{ localStorage.setItem(KEY,JSON.stringify(merged)); }catch(e){} }
- ALL=Object.values(merged).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.no||"").localeCompare(a.no||""));
+ ALL=Object.values(store.all()).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.no||"").localeCompare(a.no||""));
   $("listv").innerHTML=`<div class="card top"><div class="brand"><img src="logo.png" srcset="logo.png 1x, logo@2x.png 2x" sizes="(max-width:480px) 78vw, 340px" width="340" height="200" decoding="async" alt="Santa Clara Shipping Corp. logo"><div class="brand-text"><h1>Saved reports</h1><small>Santa Clara Shipping Corp.</small></div></div><div class="mu">${ALL.length} report(s) on this device. Tap a row to open it.</div>
  <label>Search by site, technician, or report no.</label><input id="q" placeholder="Type to filter">
- <div class="act" style="margin-top:12px"><button class="p" onclick="location.reload()">New report</button><button id="bk">Backup all (file)</button><button id="rs">Restore from backup</button><input id="rf" type="file" accept=".json,application/json" hidden></div>
+ <div class="act" style="margin-top:12px"><button class="p" id="newrep2">New report</button><button id="bk">Backup all (file)</button><button id="rs">Restore from backup</button><input id="rf" type="file" accept=".json,application/json" hidden></div>
  <p class="mu" id="lmsg">Saved reports live in this browser. Clearing browser data deletes them, so make a backup now and then.</p></div>
  <div class="card"><div class="scroll"><table id="lt"></table></div></div>`;
   $("q").oninput=drawList;drawList();
  $("bk").onclick=()=>dlBlob("service-reports-backup.json","application/json",JSON.stringify(store.all()));
  $("rs").onclick=()=>$("rf").click();
- // restore-to-cloud: push local backup entries online too
- $("rf").onchange=async e=>{const f=e.target.files[0];if(!f)return;
-  try{const o=JSON.parse(await f.text());let n=0;const cur=store.all();
-   Object.values(o).forEach(d=>{if(d&&d.no&&Array.isArray(d.eq)){cur[d.no]=d;n++; cloudPut(d);}});
-   localStorage.setItem(KEY,JSON.stringify(cur));showList();$("lmsg").textContent="Restored "+n+" report(s)."}
-  catch(x){$("lmsg").textContent="That file could not be read as a backup."}};
+ if($("newrep2"))$("newrep2").onclick=()=>{clearForm();$("form").hidden=false;$("view").hidden=true;$("listv").hidden=true;scrollTo(0,0);};
+ $("rf").onchange=e=>{const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{try{const o=JSON.parse(r.result);let n=0;const cur=store.all();
+    Object.values(o).forEach(d=>{if(d&&d.no&&Array.isArray(d.eq)){cur[d.no]=d;n++}});
+    localStorage.setItem(KEY,JSON.stringify(cur));showList();$("lmsg").textContent="Restored "+n+" report(s)."}
+   catch(x){$("lmsg").textContent="That file could not be read as a backup."}};
+  r.readAsText(f);};
 }
 function drawList(){
  const q=$("q").value.trim().toLowerCase();
  const rows=ALL.filter(r=>!q||[r.site,r.tech,r.no,r.stype].join(" ").toLowerCase().includes(q));
  $("lt").innerHTML="<tr><th>Date</th><th>Site</th><th>Technician</th><th>Report no.</th><th>Issues</th><th></th></tr>"+
-  (rows.length?rows.map(r=>`<tr class="lr" data-no="${esc(r.no)}" style="cursor:pointer"><td>${esc(r.date)}</td><td>${esc(r.site)}</td><td>${esc(r.tech)}</td><td>${esc(r.no)}</td><td>${(r.find||[]).length}</td><td><button class="x del" data-no="${esc(r.no)}" title="Delete">Delete</button></td></tr>`).join(""):'<tr><td colspan="6" class="mu">No reports found.</td></tr>');
+  (rows.length?rows.map(r=>`<tr class="lr" data-no="${esc(r.no)}" style="cursor:pointer"><td>${esc(r.date)}</td><td>${esc(r.site)}</td><td>${esc(r.tech)}</td><td>${esc(r.no)}</td><td>${(r.find||[]).length}</td><td style="white-space:nowrap"><button class="x edit" data-no="${esc(r.no)}" title="Edit">Edit</button> <button class="x del" data-no="${esc(r.no)}" title="Delete">Delete</button></td></tr>`).join(""):'<tr><td colspan="6" class="mu">No reports found.</td></tr>');
  $("lt").querySelectorAll(".lr").forEach(tr=>tr.onclick=()=>{const d=ALL.find(x=>x.no===tr.dataset.no);if(d)show(d)});
  $("lt").querySelectorAll(".del").forEach(b=>b.onclick=e=>{e.stopPropagation();
   if(confirm("Delete report "+b.dataset.no+"? This cannot be undone.")){try{store.del(b.dataset.no)}catch(x){}showList()}});
+ $("lt").querySelectorAll(".edit").forEach(b=>b.onclick=e=>{e.stopPropagation();editReport(b.dataset.no);});
+}
+function clearForm(){
+ ["site","addr","contact","rem","client"].forEach(id=>{$(id).value=""});
+ $("date").valueAsDate=new Date(); $("tech").value=""; $("stype").selectedIndex=0;
+ [...$("eq").querySelectorAll("tr")].slice(1).forEach(r=>[...r.querySelectorAll("input")].forEach(i=>i.value=""));
+ ["find","sug","rec"].forEach(k=>{$(k).innerHTML="";addRow(k)});
+ EDIT_NO=null; $("submit").textContent="Submit and generate QR"; $("msg").textContent="";
+}
+function fillForm(d){
+ EDIT_NO=d.no;
+ $("site").value=d.site||"";$("date").value=d.date||"";$("addr").value=d.addr||"";
+ $("contact").value=d.contact||"";$("tech").value=d.tech||"";$("stype").value=d.stype||"Preventive Maintenance";
+ [...$("eq").querySelectorAll("tr")].slice(1).forEach((r,i)=>{const e=d.eq&&d.eq[i];const ins=[...r.querySelectorAll("input")];
+  if(e){ins[0].value=e.total||"";ins[1].value=e.ok||"";ins[2].value=e.bad||"";ins[3].value=e.work||""}else ins.forEach(x=>x.value="")});
+ const fill=(k,items)=>{$(k).innerHTML="";if(!items||!items.length){addRow(k);return}
+  items.forEach(x=>{addRow(k);const r=$(k).lastElementChild;const e=r.querySelectorAll("select,input");
+   e[0].value=x.sys||"General";e[1].value=x.text||"";if(e[2]&&e[2].tagName==="SELECT")e[2].value=x.lvl||e[2].options[0].value;});};
+ fill("find",d.find);fill("sug",d.sug);fill("rec",d.rec);
+ $("rem").value=d.rem||"";$("client").value=d.client||"";
+ $("submit").textContent="Update report "+d.no;
+}
+function editReport(no){
+ const d=store.get(no);if(!d){alert("Report not found.");return}
+ $("form").hidden=false;$("view").hidden=true;$("listv").hidden=true;
+ fillForm(d); scrollTo(0,0);
+ $("msg").textContent="Editing "+no+" — change fields then tap Update.";
 }
 $("showlist").onclick=showList;
 $("submit").onclick=()=>{
- const d=collect();
- if(!d.site||!d.tech){$("msg").textContent="Please fill in Client / Site and Technician.";return}
- let saved=true;try{store.put(d)}catch(e){saved=false}
- show(d);
+ const base=collect(EDIT_NO);
+ if(!base.site||!base.tech){$("msg").textContent="Please fill in Client / Site and Technician.";return}
+ const isUpdate=!!EDIT_NO;
+ let saved=true;try{store.put(base)}catch(e){saved=false}
+ if(!isUpdate){ EDIT_NO=base.no; $("submit").textContent="Update report "+base.no; }
+ show(base,EDIT_NO);
+ $("msg").textContent="";
  if(!saved)$("view").insertAdjacentHTML("afterbegin",'<p class="noprint" style="color:#c62828">Could not save on this device. Print or download this report before closing.</p>');
 };
 if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});}
@@ -1620,34 +1619,6 @@ let sess='0';try{sess=sessionStorage.getItem(SESSION_KEY);}catch(e){}
 if(sess==='1'){enterApp(getAuth().u);}else{$('login').hidden=false;$('app').hidden=true;}
 }
 initAuth();
-function initCloud(){
- cloudUI();
- if($("cloud_connect")) $("cloud_connect").onclick=async ()=>{
-   const u=($("cloud_url").value||"").trim().replace(/\/+$/,"");
-   if(!u || !/^https:\/\//i.test(u)){ $("cloud_msg").textContent="Paste a valid https:// database URL first."; return; }
-   $("cloud_msg").textContent="Connecting…";
-   try{ const r=await fetch(u+"/reports.json"); if(!r.ok) throw 0;
-     cloudSet(u); cloudUI(); $("cloud_msg").textContent="Connected! New reports will sync to the shared list.";
-     // push existing device reports up so team sees them
-     const all=store.all(); let n=0;
-     for(const k of Object.keys(all)){ const res=await cloudPut(all[k]); if(res.ok) n++; }
-     $("cloud_msg").textContent+=" Uploaded "+n+" existing report(s).";
-   }catch(e){ $("cloud_msg").textContent="Could not connect. Check the URL and Firebase Rules (must allow read/write)."; }
- };
- if($("cloud_sync")) $("cloud_sync").onclick=async ()=>{
-   if(!cloudUrl()){ $("cloud_msg").textContent="Connect first."; return; }
-   $("cloud_msg").textContent="Syncing…";
-   const remote=await cloudAll();
-   if(remote===null){ $("cloud_msg").textContent="Sync failed — check internet / Rules."; return; }
-   const merged=store.all(); let n=0;
-   Object.values(remote).forEach(d=>{ if(d&&d.no&&Array.isArray(d.eq)){ if(!merged[d.no]) n++; merged[d.no]=d; }});
-   Object.values(merged).forEach(d=>{ cloudPut(d); });
-   try{ localStorage.setItem(KEY,JSON.stringify(merged)); }catch(e){}
-   cloudUI(); $("cloud_msg").textContent="Sync done. "+Object.keys(merged).length+" total ("+n+" new from team).";
- };
- if($("cloud_off")) $("cloud_off").onclick=()=>{ cloudSet(""); if($("cloud_url")) $("cloud_url").value=""; cloudUI(); $("cloud_msg").textContent="Disconnected. Reports now save on this device only."; };
-}
-initCloud();
 function initCarousels(){
   document.querySelectorAll('.brand').forEach(function(brand){
     var car=brand.querySelector('.logo-carousel'); if(!car) return;
