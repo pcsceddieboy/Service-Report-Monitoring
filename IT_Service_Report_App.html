@@ -1777,6 +1777,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.s
 
 // ===== Auto-initialize Firebase (hardcoded URL) =====
 fbInit();
+fbDb.on(()=>{refreshSide(EDIT_NO); if($("lt"))drawList();});
 // ===== Admin login (handlers attached after $ is defined) =====
 function initAuth(){
 const AUTH_KEY='sr_auth_v1', SESSION_KEY='sr_session_v1';
