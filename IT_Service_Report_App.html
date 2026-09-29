@@ -90,7 +90,28 @@ button:active{transform:scale(.98)}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:99;padding:16px}
 .modal[hidden]{display:none!important}
 .modal .card{max-width:400px;width:100%;margin:0}
-@media print{.topbar,#login,#pwmodal{display:none!important}}
+@media print{.topbar,#login,#pwmodal,#sidepanel,#sidebackdrop{display:none!important}}
+/* ===== Side panel dropdown (CRUD list) ===== */
+#menubtn{font-size:18px;padding:6px 12px;min-height:40px;line-height:1}
+#sidebackdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:98;opacity:0;pointer-events:none;transition:opacity .25s}
+#sidebackdrop.open{opacity:1;pointer-events:auto}
+#sidepanel{position:fixed;top:0;left:0;bottom:0;width:min(88vw,340px);background:var(--card);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-right:1px solid var(--bd);box-shadow:8px 0 28px rgba(11,77,110,.18);z-index:99;transform:translateX(-105%);transition:transform .28s ease;display:flex;flex-direction:column}
+#sidepanel.open{transform:translateX(0)}
+.side-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px;border-bottom:1px solid var(--bd)}
+.side-head b{color:var(--ac);font-size:16px}
+.side-head .count{font-size:12px;color:var(--mu)}
+#sideclose{border:none;background:transparent;color:var(--mu);font-size:22px;min-height:40px;min-width:40px;padding:4px 8px}
+.side-search{padding:10px 14px;border-bottom:1px solid var(--bd)}
+.side-list{flex:1;overflow-y:auto;padding:8px;-webkit-overflow-scrolling:touch}
+.side-item{border:1px solid var(--bd);border-radius:10px;padding:10px;margin-bottom:8px;background:var(--in);cursor:pointer;transition:box-shadow .15s}
+.side-item:hover{box-shadow:0 4px 14px rgba(11,77,110,.15)}
+.side-item.active{border-color:var(--ac2);box-shadow:0 0 0 2px rgba(15,163,163,.2)}
+.side-item .t{font-weight:700;font-size:14px;color:var(--ac)}
+.side-item .s{font-size:12px;color:var(--mu);margin-top:2px}
+.side-item .btns{display:flex;gap:6px;margin-top:8px}
+.side-item .btns button{flex:1;min-height:36px;font-size:13px;padding:6px 8px}
+.side-foot{padding:10px 14px;border-top:1px solid var(--bd);display:flex;gap:8px}
+.side-foot button{flex:1;min-height:40px;font-size:13px}
 /* ===== Responsive: phone ===== */
 @media(max-width:640px){
   body{font-size:14px}
@@ -124,7 +145,15 @@ button:active{transform:scale(.98)}
 .sig div{border-top:1px solid var(--tx);padding-top:4px}
 @media print{.noprint{display:none}body{background:#fff}body::before,body::after{display:none!important}.card{border:1px solid #ccc;box-shadow:none;backdrop-filter:none;background:#fff}main{max-width:100%}input,select,textarea{border:none;background:#fff;min-height:auto;padding:2px}}
 
-</style></head><body><main>
+</style></head><body>
+<div id="sidebackdrop"></div>
+<nav id="sidepanel" aria-label="Submitted reports panel">
+<div class="side-head"><div><b>Submitted reports</b><div class="count" id="sidecount">0 report(s)</div></div><button id="sideclose" aria-label="Close panel">&times;</button></div>
+<div class="side-search"><input id="sideq" placeholder="Search site, tech, report no."></div>
+<div class="side-list" id="sidelist"></div>
+<div class="side-foot"><button class="p" id="sidenew">+ New</button><button id="sideall">Full list</button></div>
+</nav>
+<main>
 <div id="login" class="login-wrap">
 <div class="card top login-card">
 	
@@ -138,7 +167,7 @@ button:active{transform:scale(.98)}
 </div>
 </div>
 <div id="app" hidden>
-<div class="topbar noprint"><span>Logged in as <b id="who">admin</b></span><span class="rowbtn"><button id="pwbtn">Change password</button><button id="logout">Logout</button></span></div>
+<div class="topbar noprint"><span><button id="menubtn" title="Submitted reports">&#9776;</button> Logged in as <b id="who">admin</b></span><span class="rowbtn"><button id="pwbtn">Change password</button><button id="logout">Logout</button></span></div>
 <div id="form">
 	
 <div class="card top">
@@ -1511,6 +1540,39 @@ function show(d,editNo){
 }
 let ALL=[];
 let EDIT_NO=null;
+function refreshSide(activeNo){
+ const q=($("sideq")&&$("sideq").value||"").trim().toLowerCase();
+ const all=Object.values(store.all()).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.no||"").localeCompare(a.no||""));
+ const rows=all.filter(r=>!q||[r.site,r.tech,r.no,r.stype].join(" ").toLowerCase().includes(q));
+ if($("sidecount"))$("sidecount").textContent=all.length+" report(s)";
+ if(!$("sidelist"))return;
+ $("sidelist").innerHTML=rows.length?rows.map(r=>`<div class="side-item${r.no===activeNo?" active":""}" data-no="${esc(r.no)}"><div class="t">${esc(r.site||"(no site)")}</div><div class="s">${esc(r.date||"")} · ${esc(r.tech||"")} · ${esc(r.no||"")}<br>${esc(r.stype||"")} · ${(r.find||[]).length} issue(s)</div><div class="btns"><button class="sview" data-no="${esc(r.no)}">Open</button><button class="sedit" data-no="${esc(r.no)}">Edit</button><button class="sdel" data-no="${esc(r.no)}">Del</button></div></div>`).join(""):'<p class="mu" style="padding:8px">No submitted reports yet.</p>';
+ $("sidelist").querySelectorAll(".side-item").forEach(it=>it.onclick=e=>{
+   if(e.target.closest("button"))return;
+   const d=store.get(it.dataset.no); if(!d)return;
+   closeSide(); show(d);
+ });
+ $("sidelist").querySelectorAll(".sview").forEach(b=>b.onclick=e=>{e.stopPropagation();const d=store.get(b.dataset.no);if(d){closeSide();show(d);}});
+ $("sidelist").querySelectorAll(".sedit").forEach(b=>b.onclick=e=>{e.stopPropagation();closeSide();editReport(b.dataset.no);});
+ $("sidelist").querySelectorAll(".sdel").forEach(b=>b.onclick=e=>{e.stopPropagation();
+   if(confirm("Delete report "+b.dataset.no+"? This cannot be undone.")){try{store.del(b.dataset.no)}catch(x){}refreshSide();drawList();}});
+}
+function openSide(){refreshSide(EDIT_NO);$("sidepanel").classList.add("open");$("sidebackdrop").classList.add("open");}
+function closeSide(){$("sidepanel").classList.remove("open");$("sidebackdrop").classList.remove("open");}
+function initSide(){
+ if($("menubtn"))$("menubtn").onclick=openSide;
+ if($("sideclose"))$("sideclose").onclick=closeSide;
+ if($("sidebackdrop"))$("sidebackdrop").onclick=closeSide;
+ if($("sideq"))$("sideq").oninput=()=>refreshSide(EDIT_NO);
+ if($("sidenew"))$("sidenew").onclick=()=>{closeSide();clearForm();$("form").hidden=false;$("view").hidden=true;$("listv").hidden=true;scrollTo(0,0);};
+ if($("sideall"))$("sideall").onclick=()=>{closeSide();showList();};
+ document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeSide();}});
+ // swipe from left edge to open on phone
+ let sx=null;
+ document.addEventListener("touchstart",e=>{if(e.touches.length===1)sx=e.touches[0].clientX;},{passive:true});
+ document.addEventListener("touchend",e=>{if(sx===null)return;const dx=e.changedTouches[0].clientX-sx;sx=null;
+   if(dx>70&&e.changedTouches[0].clientX<140&&$("app")&&!$("app").hidden)openSide();},{passive:true});
+}
 function showList(){
  $("form").hidden=true;$("view").hidden=true;$("listv").hidden=false;
  ALL=Object.values(store.all()).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.no||"").localeCompare(a.no||""));
@@ -1538,7 +1600,7 @@ function drawList(){
   (rows.length?rows.map(r=>`<tr class="lr" data-no="${esc(r.no)}" style="cursor:pointer"><td>${esc(r.date)}</td><td>${esc(r.site)}</td><td>${esc(r.tech)}</td><td>${esc(r.no)}</td><td>${(r.find||[]).length}</td><td style="white-space:nowrap"><button class="x edit" data-no="${esc(r.no)}" title="Edit">Edit</button> <button class="x del" data-no="${esc(r.no)}" title="Delete">Delete</button></td></tr>`).join(""):'<tr><td colspan="6" class="mu">No reports found.</td></tr>');
  $("lt").querySelectorAll(".lr").forEach(tr=>tr.onclick=()=>{const d=ALL.find(x=>x.no===tr.dataset.no);if(d)show(d)});
  $("lt").querySelectorAll(".del").forEach(b=>b.onclick=e=>{e.stopPropagation();
-  if(confirm("Delete report "+b.dataset.no+"? This cannot be undone.")){try{store.del(b.dataset.no)}catch(x){}showList()}});
+  if(confirm("Delete report "+b.dataset.no+"? This cannot be undone.")){try{store.del(b.dataset.no)}catch(x){}refreshSide();showList()}});
  $("lt").querySelectorAll(".edit").forEach(b=>b.onclick=e=>{e.stopPropagation();editReport(b.dataset.no);});
 }
 function clearForm(){
@@ -1563,9 +1625,11 @@ function fillForm(d){
 }
 function editReport(no){
  const d=store.get(no);if(!d){alert("Report not found.");return}
+ closeSide();
  $("form").hidden=false;$("view").hidden=true;$("listv").hidden=true;
  fillForm(d); scrollTo(0,0);
  $("msg").textContent="Editing "+no+" — change fields then tap Update.";
+ refreshSide(no);
 }
 $("showlist").onclick=showList;
 $("submit").onclick=()=>{
@@ -1574,17 +1638,19 @@ $("submit").onclick=()=>{
  const isUpdate=!!EDIT_NO;
  let saved=true;try{store.put(base)}catch(e){saved=false}
  if(!isUpdate){ EDIT_NO=base.no; $("submit").textContent="Update report "+base.no; }
+ refreshSide(EDIT_NO);
  show(base,EDIT_NO);
  $("msg").textContent="";
  if(!saved)$("view").insertAdjacentHTML("afterbegin",'<p class="noprint" style="color:#c62828">Could not save on this device. Print or download this report before closing.</p>');
 };
+initSide();
 if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});}
 // ===== Admin login (handlers attached after $ is defined) =====
 function initAuth(){
 const AUTH_KEY='sr_auth_v1', SESSION_KEY='sr_session_v1';
 function getAuth(){try{const a=JSON.parse(localStorage.getItem(AUTH_KEY));if(a&&a.u&&a.p)return a;}catch(e){}return{u:'admin',p:'admin123'};}
 function setAuth(u,p){localStorage.setItem(AUTH_KEY,JSON.stringify({u,p}));}
-function enterApp(u){$('login').hidden=true;$('app').hidden=false;$('who').textContent=u;try{sessionStorage.setItem(SESSION_KEY,'1');}catch(e){}}
+function enterApp(u){$('login').hidden=true;$('app').hidden=false;$('who').textContent=u;try{sessionStorage.setItem(SESSION_KEY,'1');}catch(e){}refreshSide(EDIT_NO);}
 function exitApp(){try{sessionStorage.removeItem(SESSION_KEY);}catch(e){}$('app').hidden=true;$('login').hidden=false;$('lg_p').value='';$('lg_err').textContent='';$('lg_u').focus();}
 function tryLogin(){
   const u=$('lg_u').value.trim(), p=$('lg_p').value, a=getAuth();
