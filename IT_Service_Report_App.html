@@ -1567,7 +1567,9 @@ function fbPut(report){
 
 function fbDel(no){
   const base=FIREBASE_URL.replace(/\/$/,"");
-  fetch(`${base}/reports/${encodeURIComponent(no)}.json`,{method:"DELETE"}).catch(()=>{});
+  return fetch(`${base}/reports/${encodeURIComponent(no)}.json`,{method:"DELETE"}).then(r=>{
+    if(!r.ok) throw new Error("Delete failed: "+r.status);
+  }).catch(e=>{console.error("Firebase delete error:",e); throw e});
 }
 
 const store={all(){
@@ -1638,7 +1640,11 @@ function refreshSide(activeNo){
  $("sidelist").querySelectorAll(".sview").forEach(b=>b.onclick=e=>{e.stopPropagation();const d=store.get(b.dataset.no);if(d){closeSide();show(d);}});
  $("sidelist").querySelectorAll(".sedit").forEach(b=>b.onclick=e=>{e.stopPropagation();closeSide();editReport(b.dataset.no);});
  $("sidelist").querySelectorAll(".sdel").forEach(b=>b.onclick=e=>{e.stopPropagation();
-  if(confirm("Delete report "+b.dataset.no+"? This cannot be undone.")){try{store.del(b.dataset.no)}catch(x){}refreshSide();if($("lt"))drawList();}});
+  if(confirm("Delete report "+b.dataset.no+"? This cannot be undone.")){
+    try{store.del(b.dataset.no); refreshSide(); if($("lt"))drawList();}
+    catch(x){alert("Delete failed: "+x.message); console.error(x);}
+  }
+});
  $("sidelist").querySelectorAll(".sprint").forEach(b=>b.onclick=e=>{e.stopPropagation();printReport(b.dataset.no);});
  $("sidelist").querySelectorAll(".sxl").forEach(b=>b.onclick=e=>{e.stopPropagation();const d=store.get(b.dataset.no);if(d)dlBlob(d.no+".xlsx","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",buildXlsx(d));});
 }
@@ -1685,7 +1691,11 @@ function drawList(){
   (rows.length?rows.map(r=>`<tr class="lr" data-no="${esc(r.no)}" style="cursor:pointer"><td>${esc(r.date)}</td><td>${esc(r.site)}</td><td>${esc(r.tech)}</td><td>${esc(r.no)}</td><td>${(r.find||[]).length}</td><td style="white-space:nowrap"><button class="x edit" data-no="${esc(r.no)}" title="Edit">Edit</button> <button class="x del" data-no="${esc(r.no)}" title="Delete">Delete</button></td></tr>`).join(""):'<tr><td colspan="6" class="mu">No reports found.</td></tr>');
  $("lt").querySelectorAll(".lr").forEach(tr=>tr.onclick=()=>{const d=ALL.find(x=>x.no===tr.dataset.no);if(d)show(d)});
  $("lt").querySelectorAll(".del").forEach(b=>b.onclick=e=>{e.stopPropagation();
-  if(confirm("Delete report "+b.dataset.no+"? This cannot be undone.")){try{store.del(b.dataset.no)}catch(x){}refreshSide();showList()}});
+  if(confirm("Delete report "+b.dataset.no+"? This cannot be undone.")){
+    try{store.del(b.dataset.no); refreshSide(); showList();}
+    catch(x){alert("Delete failed: "+x.message); console.error(x);}
+  }
+});
  $("lt").querySelectorAll(".edit").forEach(b=>b.onclick=e=>{e.stopPropagation();editReport(b.dataset.no);});
 }
 function clearForm(){
