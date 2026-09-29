@@ -62,6 +62,13 @@ button:active{transform:scale(.98)}
 .mu{color:var(--mu);font-size:13px}
 .brand{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;margin:4px 0 12px}
 .brand img{width:clamp(220px,60vw,340px);height:auto;max-height:200px;object-fit:contain;background:transparent;border-radius:10px;padding:6px;box-shadow:none}
+/* ===== Dark mode logo adjustment ===== */
+:root[data-theme="dark"] .brand img,
+:root[data-theme="dark"] .logo-track img{filter:invert(0.9) hue-rotate(180deg) contrast(1.2);}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .brand img,
+  :root:not([data-theme="light"]) .logo-track img{filter:invert(0.9) hue-rotate(180deg) contrast(1.2);}
+}
 /* ===== Logo carousel - transparent background (logoo + penafrancia) ===== */
 .logo-carousel{position:relative;width:clamp(220px,60vw,340px);margin:0 auto;overflow:hidden;background:transparent;border-radius:10px;padding:6px;box-shadow:none}
 .logo-track{display:flex;transition:transform .6s ease}
@@ -167,8 +174,7 @@ button:active{transform:scale(.98)}
 </div>
 </div>
 <div id="app" hidden>
-<div class="topbar noprint"><span><button id="menubtn" title="Submitted reports">&#9776;</button> Logged in as <b id="who">admin</b></span><span class="rowbtn">
-<button id="logout">Logout</button></span></div>
+<div class="topbar noprint"><span><button id="menubtn" title="Submitted reports">&#9776;</button> Logged in as <b id="who">admin</b></span><span class="rowbtn"><button id="themebtn" title="Toggle theme">&#9728;</button><button id="logout">Logout</button></span></div>
 <div id="form">
 	
 <div class="card top">
@@ -1791,6 +1797,21 @@ $("submit").onclick=()=>{
 initSide();
 if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});}
 
+// ===== Theme toggle (dark/light mode) =====
+function initTheme(){
+  const saved=localStorage.getItem('theme');
+  const prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const dark=saved? saved==='dark' : prefersDark;
+  if(dark) document.documentElement.setAttribute('data-theme','dark');
+  else document.documentElement.removeAttribute('data-theme');
+  if($("themebtn")) $("themebtn").textContent = dark ? '&#9788;' : '&#9728;';
+  if($("themebtn")) $("themebtn").onclick=()=>{
+    const isDark=document.documentElement.hasAttribute('data-theme');
+    if(isDark){ document.documentElement.removeAttribute('data-theme'); localStorage.setItem('theme','light'); $("themebtn").textContent='&#9728;'; }
+    else{ document.documentElement.setAttribute('data-theme','dark'); localStorage.setItem('theme','dark'); $("themebtn").textContent='&#9788;'; }
+  };
+}
+initTheme();
 // ===== Auto-initialize Firebase (hardcoded URL) =====
 fbInit();
 fbDb.on(()=>{refreshSide(EDIT_NO); if($("lt"))drawList();});
