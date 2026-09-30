@@ -2163,14 +2163,22 @@ function showList(){
 $("bk").onclick=()=>dlBlob("service-reports-backup.json","application/json",JSON.stringify(store.all()));
   $("rs").onclick=()=>$("rf").click();
   $("exportAll").onclick=()=>{
-    if(!ALL.length){alert("There are no reports to export.");return}
+    ALL=Object.values(store.all()).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.no||"").localeCompare(a.no||""));
+    if(!ALL.length){alert("There are no reports to export yet.");return}
     $("lmsg").textContent="Building Excel summary of "+ALL.length+" report(s)...";
     try{
-      dlBlob("it-service-reports-summary.xlsx","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",buildAllXlsx(ALL));
-      $("lmsg").textContent="Excel summary downloaded ("+ALL.length+" report(s)).";
-    }catch(x){console.error(x);$("lmsg").textContent="Excel export failed: "+x.message}
+      const bytes=buildAllXlsx(ALL);
+      if(!bytes||!bytes.length)throw new Error("Workbook came back empty.");
+      dlBlob("it-service-reports-summary.xlsx","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",bytes);
+      $("lmsg").textContent="Excel summary downloaded ("+ALL.length+" report(s), "+bytes.length+" bytes).";
+    }catch(x){
+      console.error("Export all failed:",x);
+      $("lmsg").textContent="Excel export failed: "+(x&&x.message?x.message:String(x));
+      alert("Excel export failed.\n\n"+(x&&x.message?x.message:String(x))+"\n\nDetails are in the browser console (F12).");
+    }
   };
   $("printAll").onclick=()=>{
+    ALL=Object.values(store.all()).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.no||"").localeCompare(a.no||""));
     if(!ALL.length){alert("There are no reports to print.");return}
     printAllReports();
   };
