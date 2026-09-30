@@ -1778,9 +1778,10 @@ fbDb.on(()=>{refreshSide(EDIT_NO); if($("lt"))drawList();});
 function initAuth(){
 const AUTH_KEY='sr_auth_v1', SESSION_KEY='sr_session_v1';
 function getAuth(){try{const a=JSON.parse(localStorage.getItem(AUTH_KEY));if(a&&a.u&&a.p)return a;}catch(e){}return{u:'admin',p:'admin123'};}
-function setAuth(u,p){localStorage.setItem(AUTH_KEY,JSON.stringify({u,p}));}
-function enterApp(u){$('login').hidden=true;$('app').hidden=false;$('who').textContent=u;try{sessionStorage.setItem(SESSION_KEY,'1');localStorage.setItem(SESSION_KEY,'1');}catch(e){}refreshSide(EDIT_NO); initCarousels();}
-function exitApp(){try{sessionStorage.removeItem(SESSION_KEY);localStorage.removeItem(SESSION_KEY);}catch(e){}$('app').hidden=true;$('login').hidden=false;$('lg_p').value='';$('lg_err').textContent='';$('lg_u').focus();}
+// Session is per tab: survives refresh, cleared when the tab is closed or on Logout
+function isLoggedIn(){try{return sessionStorage.getItem(SESSION_KEY)==='1'}catch(e){return false}}
+function enterApp(u){$('login').hidden=true;$('app').hidden=false;$('who').textContent=u;try{sessionStorage.setItem(SESSION_KEY,'1');}catch(e){}refreshSide(EDIT_NO); initCarousels();}
+function exitApp(){try{sessionStorage.removeItem(SESSION_KEY);}catch(e){}$('app').hidden=true;$('login').hidden=false;$('lg_p').value='';$('lg_err').textContent='';$('lg_u').focus();}
 function tryLogin(){
   const u=$('lg_u').value.trim(), p=$('lg_p').value, a=getAuth();
   if(u===a.u&&p===a.p){$('lg_err').textContent='';enterApp(u);}
@@ -1791,9 +1792,10 @@ $('lg_p').onkeydown=e=>{if(e.key==='Enter')tryLogin();};
 $('lg_u').onkeydown=e=>{if(e.key==='Enter')tryLogin();};
 $('lg_show').onclick=()=>{const i=$('lg_p'),s=$('lg_show');if(i.type==='password'){i.type='text';s.textContent='Hide';}else{i.type='password';s.textContent='Show';}};
 $('logout').onclick=function(){exitApp();};
-// auto-login if session active, else show login
-let sess=sessionStorage.getItem(SESSION_KEY)||localStorage.getItem(SESSION_KEY);
-if(sess==='1'){enterApp(getAuth().u);}else{$('login').hidden=false;$('app').hidden=true;}
+// Drop any leftover persistent session flag from older versions
+try{localStorage.removeItem(SESSION_KEY);}catch(e){}
+// Restore session on refresh, otherwise require sign in
+if(isLoggedIn()){enterApp(getAuth().u);}else{$('login').hidden=false;$('app').hidden=true;try{$('lg_u').focus();}catch(e){}}
 }
 initAuth();
 // Initialize carousel on DOM ready and after login
