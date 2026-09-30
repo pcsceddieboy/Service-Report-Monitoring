@@ -1,4 +1,4 @@
-const CACHE = 'it-report-v3';
+const CACHE = 'it-report-v4';
 const ASSETS = ['./', './index.html', './IT_Service_Report_App.html', './manifest.webmanifest', './logo.png', './logoo.png', './penafrancia.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));

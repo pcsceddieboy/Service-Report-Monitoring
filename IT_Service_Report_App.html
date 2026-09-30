@@ -14,180 +14,496 @@
 <title>IT Service Report App (Offline)</title>
 
 <style>
-:root{--bg:#eef0f7;--card:rgba(255,255,255,.9);--tx:#1f1f2e;--mu:#5f5f76;--ac:#0b4d6e;--ac2:#0fa3a3;--bd:#dde1ec;--in:#ffffff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--shadow:0 8px 28px rgba(11,77,110,.12)}
-html{scroll-padding-top:env(safe-area-inset-top,0px)}
+/* ============================================================
+   IT Service Report — design system
+   Tokens → base → shell → components → responsive → print
+   ============================================================ */
+:root{
+  /* brand */
+  --brand:#0a4a6b; --brand-600:#0d5b81; --brand-700:#07384f;
+  --accent:#0d9a9a; --accent-ink:#0a7c7c; --accent-soft:#e2f4f4;
+
+  /* surfaces */
+  --bg:#eef2f8; --bg-2:#e2e9f4;
+  --surface:#ffffff; --surface-2:#f8fafc; --surface-3:#eff3f9;
+
+  /* text */
+  --tx:#0f1b2a; --tx-2:#3b4c60; --mu:#61748a; --mu-2:#94a3b8;
+
+  /* lines */
+  --line:#e3e9f2; --line-2:#cfd9e6;
+
+  /* status */
+  --ok:#15803d; --ok-bg:#e7f7ec; --ok-line:#a5e0b7;
+  --warn:#a1620a; --warn-bg:#fff7e3; --warn-line:#f2cf85;
+  --bad:#b91c1c; --bad-bg:#fdecec; --bad-line:#f2b2b2;
+
+  /* shape */
+  --r-xs:6px; --r-sm:9px; --r-md:12px; --r-lg:16px; --r-xl:22px; --r-full:999px;
+  --sh-1:0 1px 2px rgba(15,27,42,.05);
+  --sh-2:0 2px 6px rgba(15,27,42,.05),0 1px 2px rgba(15,27,42,.04);
+  --sh-3:0 10px 26px rgba(10,74,107,.09),0 2px 6px rgba(15,27,42,.04);
+  --sh-4:0 20px 48px rgba(10,74,107,.16),0 4px 10px rgba(15,27,42,.05);
+
+  /* type + motion */
+  --f:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --t1:.15s; --t2:.24s; --t3:.36s;
+  --ease:cubic-bezier(.4,0,.2,1);
+  --topbar-h:58px;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+html{scroll-padding-top:calc(var(--topbar-h) + 12px);-webkit-text-size-adjust:100%}
 *{box-sizing:border-box}
 img{max-width:100%;height:auto}
-body{margin:0;background:var(--bg);color:var(--tx);font-family:"Segoe UI",Arial,Helvetica,sans-serif;font-size:15px;line-height:1.45;-webkit-text-size-adjust:100%;min-height:100vh;position:relative;isolation:isolate}
-/* ===== Blurred logo background ===== */
-body::before{content:"";position:fixed;inset:0;z-index:-2;background:var(--bg) url("logoo.png") center 12vh / min(92vw,620px) auto no-repeat;filter:blur(14px) saturate(1.05);opacity:.28;pointer-events:none;transform:scale(1.08)}
-body::after{content:"";position:fixed;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(238,240,247,.82),rgba(238,240,247,.9) 40%,rgba(238,240,247,.94));pointer-events:none}
-main{max-width:760px;margin:0 auto;padding:16px;position:relative;z-index:1}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:var(--shadow);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
-.top{border-top:none;position:relative;overflow:hidden}
-.top::before{content:"";position:absolute;top:0;left:0;right:0;height:8px;background:linear-gradient(90deg,var(--ac),var(--ac2))}
-h1{margin:0 0 6px;font-size:clamp(20px,4.5vw,24px);line-height:1.2;letter-spacing:.2px}h2{margin:0 0 12px;font-size:clamp(15px,3.8vw,17px);color:var(--ac);display:flex;align-items:center;gap:8px}
-h2::before{content:"";width:6px;height:18px;border-radius:3px;background:linear-gradient(180deg,var(--ac),var(--ac2));display:inline-block}
-label{display:block;font-size:13px;color:var(--mu);margin:10px 0 4px}
-input,select,textarea{width:100%;max-width:100%;font:inherit;font-size:16px;color:var(--tx);background:var(--in);border:1.5px solid var(--bd);border-radius:10px;padding:10px;min-height:44px;transition:border .15s,box-shadow .15s}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--ac2);box-shadow:0 0 0 3px rgba(15,163,163,.18)}
-textarea{min-height:80px;resize:vertical}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
-.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px}
-table{border-collapse:collapse;width:100%;min-width:520px}
-th,td{border:1px solid var(--bd);padding:8px 6px;text-align:left;font-size:14px;vertical-align:top}
-th{background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;position:sticky;top:0}
-td input{padding:8px;min-height:40px;font-size:16px}
-tr:nth-child(even) td{background:rgba(11,77,110,.04)}
-.row{display:grid;grid-template-columns:120px 1fr 100px 40px;gap:8px;margin-bottom:8px;align-items:center}
-.row.s{grid-template-columns:120px 1fr 40px}
-/* ===== Severity / priority colours ===== */
-select.lvl{font-weight:600;transition:background .15s,color .15s}
-select.lvl-low{background:#e6f4ea;color:#1e7b34;border-color:#8fd6a6}
-select.lvl-medium{background:#fff6d9;color:#8a6100;border-color:#f0d17a}
-select.lvl-high{background:#fde8e8;color:#b3261e;border-color:#f2b0ad}
-/* ===== Severity tag in report table ===== */
-.tag{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid transparent;white-space:nowrap}
-.tag-low{background:#e6f4ea;color:#1e7b34;border-color:#8fd6a6}
-.tag-medium{background:#fff6d9;color:#8a6100;border-color:#f0d17a}
-.tag-high{background:#fde8e8;color:#b3261e;border-color:#f2b0ad}
-button{font:inherit;font-size:15px;font-weight:600;cursor:pointer;border-radius:10px;border:1px solid var(--ac);background:rgba(255,255,255,.7);color:var(--ac);padding:10px 14px;min-height:44px;touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:transform .08s,box-shadow .15s,background .15s}
-button:hover{box-shadow:0 4px 14px rgba(11,77,110,.18)}
-button.p{background:linear-gradient(135deg,var(--ac),var(--ac2));border:none;color:#fff;box-shadow:0 6px 16px rgba(11,77,110,.28)}
-button.p:hover{filter:brightness(1.05)}
-button:active{transform:scale(.98)}
-.x{padding:4px 0;min-width:40px}
-.act{display:flex;gap:8px;flex-wrap:wrap}
-.act button{flex:1 1 auto}
-.qr{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
-#qrc{width:min(100%,380px);height:auto;image-rendering:pixelated;background:#fff;border-radius:6px}
-.mu{color:var(--mu);font-size:13px}
-.brand{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;margin:4px 0 12px}
-.brand img{width:clamp(220px,60vw,340px);height:auto;max-height:200px;object-fit:contain;background:transparent;border-radius:10px;padding:6px;box-shadow:none}
-/* ===== Logo carousel - transparent background (logoo + penafrancia) ===== */
-.logo-carousel{position:relative;width:clamp(220px,60vw,340px);margin:0 auto;overflow:hidden;background:transparent;border-radius:10px;padding:6px;box-shadow:none}
-.logo-track{display:flex;transition:transform .6s ease}
-.logo-track img{flex:0 0 100%;width:100%;height:auto;max-height:200px;object-fit:contain;background:transparent;border-radius:6px;box-shadow:none;padding:0}
-.logo-dots{display:flex;justify-content:center;gap:6px;margin-top:6px}
-.logo-dots button{min-height:0;min-width:0;width:10px;height:10px;border-radius:50%;padding:0;border:none;background:#c5cedb;cursor:pointer}
-.logo-dots button.on{background:linear-gradient(135deg,var(--ac),var(--ac2));width:22px;border-radius:6px}
-.logo-arrow{position:absolute;top:50%;transform:translateY(-50%);background:rgba(11,77,110,.55);color:#fff;border:none;width:30px;height:30px;min-height:30px;border-radius:50%;font-size:16px;line-height:1;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.logo-arrow:hover{box-shadow:none;background:rgba(11,77,110,.9)}
-.logo-arrow.prev{left:4px}.logo-arrow.next{right:4px}
-.brand-text h1{margin:0;font-size:clamp(22px,5vw,28px)}
-.brand-text small{display:block;color:var(--mu);font-size:13px;letter-spacing:.5px;margin-top:2px;text-transform:uppercase}
-@media(max-width:480px){.brand img{width:min(78vw,300px);max-height:170px}.logo-carousel{width:min(78vw,300px)}.logo-track img{max-height:170px}}
-@media print{.brand img{width:260px;max-height:150px;box-shadow:none}.brand{gap:6px;margin:0 0 8px}.logo-carousel{width:260px;box-shadow:none}.logo-track img{max-height:150px}.logo-track img+img,.logo-arrow,.logo-dots{display:none!important}.logo-track{transform:none!important}}
-.login-wrap{max-width:420px;margin:6vh auto;padding:16px}
-.login-card{text-align:center}
-.login-card .brand img{width:clamp(200px,55vw,280px)}
-.login-card input{margin-bottom:2px;text-align:left}
-.err{color:#c62828;font-size:13px;min-height:18px;margin:6px 0}
-.topbar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px;background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:8px 12px;font-size:13px}
-.topbar b{color:var(--ac)}
-.topbar .rowbtn{display:flex;gap:6px}
-.topbar button{padding:6px 10px;font-size:13px}
+
+/* ---------- base ---------- */
+body{
+  margin:0;min-height:100vh;position:relative;isolation:isolate;
+  font-family:var(--f);font-size:15px;line-height:1.5;color:var(--tx);
+  background:var(--bg);
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+}
+/* ambient colour wash — cheap, GPU friendly */
+body::before{
+  content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
+  background:
+    radial-gradient(1100px 620px at 10% -10%,rgba(13,154,154,.15),transparent 60%),
+    radial-gradient(900px 560px at 94% 2%,rgba(10,74,107,.15),transparent 62%),
+    linear-gradient(180deg,#f3f7fc 0%,var(--bg) 46%,var(--bg-2) 100%);
+}
+/* soft brand mark, barely-there */
+body::after{
+  content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:url("logoo.png") center 5vh / min(86vw,540px) auto no-repeat;
+  filter:blur(34px) saturate(.85);opacity:.14;transform:scale(1.06);
+}
+::selection{background:rgba(13,154,154,.22)}
+:where(a){color:var(--brand-600)}
+
+/* ---------- shell ---------- */
+main{max-width:820px;margin:0 auto;padding:0 18px 72px;position:relative;z-index:1}
+#app{padding-bottom:24px}
+
+/* ---------- typography ---------- */
+h1{margin:0;font-size:clamp(21px,4.6vw,26px);line-height:1.2;letter-spacing:-.015em;font-weight:700}
+h2{
+  margin:0 0 14px;font-size:clamp(14px,3.4vw,15.5px);font-weight:700;letter-spacing:.01em;
+  color:var(--brand);display:flex;align-items:center;gap:10px;line-height:1.3;
+}
+h2::before{
+  content:"";flex:0 0 auto;width:4px;height:17px;border-radius:var(--r-full);
+  background:linear-gradient(180deg,var(--brand-600),var(--accent));
+}
+p{margin:0 0 10px}
+p:last-child{margin-bottom:0}
+.mu{color:var(--mu);font-size:13px;line-height:1.5}
+.eyebrow{
+  display:block;font-size:11px;font-weight:700;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--mu-2);margin:0 0 3px;
+}
+.mono{font-family:var(--mono);font-size:12.5px}
+
+/* ---------- cards ---------- */
+.card{
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r-xl);
+  padding:22px;margin-bottom:16px;box-shadow:var(--sh-2);position:relative;
+}
+.card:last-child{margin-bottom:0}
+.top{overflow:hidden;padding-top:26px}
+.top::before{
+  content:"";position:absolute;inset:0 0 auto;height:5px;
+  background:linear-gradient(90deg,var(--brand-600),var(--accent) 60%,#3fc4b8);
+}
+.hero{
+  background:
+    linear-gradient(180deg,rgba(13,154,154,.06),transparent 70%),
+    var(--surface);
+  border-color:var(--line-2);
+}
+
+/* ---------- forms ---------- */
+label{display:block;font-size:12.5px;font-weight:600;color:var(--tx-2);margin:0 0 6px;letter-spacing:.005em}
+.field{margin-bottom:14px}
+.field:last-child{margin-bottom:0}
+input,select,textarea{
+  width:100%;max-width:100%;font:inherit;font-size:16px;color:var(--tx);
+  background:var(--surface);border:1.5px solid var(--line-2);border-radius:var(--r-md);
+  padding:11px 13px;min-height:46px;appearance:none;-webkit-appearance:none;
+  transition:border-color var(--t1) var(--ease),box-shadow var(--t1) var(--ease),background var(--t1) var(--ease);
+}
+textarea{min-height:96px;resize:vertical;line-height:1.55}
+select{
+  padding-right:38px;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%2361748a' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center;background-size:11px;
+}
+input::placeholder,textarea::placeholder{color:var(--mu-2)}
+input:hover,select:hover,textarea:hover{border-color:var(--line-2);background:var(--surface-2)}
+input:focus,select:focus,textarea:focus{
+  outline:none;border-color:var(--accent);background:var(--surface);
+  box-shadow:0 0 0 4px rgba(13,154,154,.15);
+}
+input:focus-visible,select:focus-visible,textarea:focus-visible{border-color:var(--accent)}
+#lg_p{-webkit-text-fill-color:currentColor}
 .pwrow{position:relative}
-.pwrow button{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:none;color:var(--mu);padding:4px 8px}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:99;padding:16px}
-.modal[hidden]{display:none!important}
-.modal .card{max-width:400px;width:100%;margin:0}
-@media print{.topbar,#login,#sidepanel,#sidebackdrop{display:none!important}}
-/* ===== Side panel dropdown (CRUD list) ===== */
-#menubtn{font-size:18px;padding:6px 12px;min-height:40px;line-height:1}
-#sidebackdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:98;opacity:0;pointer-events:none;transition:opacity .25s}
+.pwrow input{padding-right:72px}
+.pwrow button{
+  position:absolute;right:5px;top:50%;transform:translateY(-50%);
+  border:none;background:transparent;color:var(--mu);padding:6px 10px;
+  min-height:0;font-size:12.5px;font-weight:700;border-radius:var(--r-sm);
+}
+.pwrow button:hover{color:var(--brand);background:var(--surface-3);box-shadow:none}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+
+/* ---------- buttons ---------- */
+button{
+  font:inherit;font-size:14.5px;font-weight:650;letter-spacing:.005em;cursor:pointer;
+  border-radius:var(--r-md);border:1.5px solid var(--line-2);background:var(--surface);
+  color:var(--brand);padding:11px 16px;min-height:46px;touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+  transition:transform .1s var(--ease),box-shadow var(--t1) var(--ease),
+             background var(--t1) var(--ease),border-color var(--t1) var(--ease),color var(--t1) var(--ease);
+}
+button:hover{background:var(--surface-2);border-color:var(--brand);box-shadow:var(--sh-2)}
+button:active{transform:translateY(1px)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+button.p{
+  background:linear-gradient(135deg,var(--brand-600),var(--accent));border-color:transparent;color:#fff;
+  box-shadow:0 6px 18px rgba(10,74,107,.26);
+}
+button.p:hover{filter:brightness(1.06);box-shadow:0 10px 26px rgba(10,74,107,.3);border-color:transparent}
+button.ghost{border-color:transparent;background:transparent;color:var(--mu)}
+button.ghost:hover{background:var(--surface-3);color:var(--brand);border-color:transparent}
+button.danger{border-color:var(--bad-line);background:var(--bad-bg);color:var(--bad)}
+button.danger:hover{background:#fbdede;border-color:var(--bad);box-shadow:none}
+.x{padding:0;min-width:44px;min-height:44px;font-size:20px;line-height:1;color:var(--mu);border-radius:var(--r-md)}
+.x:hover{background:var(--bad-bg);border-color:var(--bad-line);color:var(--bad);box-shadow:none}
+.act{display:flex;gap:10px;flex-wrap:wrap}
+.act button{flex:1 1 auto}
+
+/* ---------- tables ---------- */
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--r-md);border:1px solid var(--line)}
+table{border-collapse:collapse;width:100%;min-width:520px;background:var(--surface)}
+th,td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:11px 12px;text-align:left;font-size:13.5px;vertical-align:middle}
+th:last-child,td:last-child{border-right:none}
+tbody tr:last-child td{border-bottom:none}
+th{
+  background:linear-gradient(135deg,var(--brand),var(--brand-600));color:#fff;
+  font-size:11.5px;font-weight:700;letter-spacing:.055em;text-transform:uppercase;
+  position:sticky;top:0;z-index:2;white-space:nowrap;
+}
+tbody tr:nth-child(even) td{background:var(--surface-2)}
+tbody tr:hover td{background:var(--accent-soft)}
+td input{padding:8px 10px;min-height:42px;font-size:16px;background:var(--surface-2)}
+td b{color:var(--brand);font-weight:650}
+
+/* ---------- findings rows ---------- */
+.row{
+  display:grid;grid-template-columns:150px 1fr 118px 44px;gap:10px;align-items:end;
+  padding:13px;border:1px solid var(--line);border-radius:var(--r-lg);
+  background:var(--surface-2);margin-bottom:10px;
+  transition:border-color var(--t1) var(--ease),box-shadow var(--t1) var(--ease);
+}
+.row:hover{border-color:var(--line-2);box-shadow:var(--sh-1)}
+.row:focus-within{border-color:var(--accent);box-shadow:0 0 0 4px rgba(13,154,154,.1);background:var(--surface)}
+.row.s{grid-template-columns:150px 1fr 44px}
+.fl{display:flex;flex-direction:column;gap:5px;min-width:0}
+.fl>span{font-size:10.5px;font-weight:700;letter-spacing:.075em;text-transform:uppercase;color:var(--mu-2)}
+.fl input,.fl select{background:var(--surface)}
+/* add-row button */
+[data-add]{
+  border-style:dashed;border-color:var(--line-2);color:var(--brand-600);
+  background:var(--surface-2);font-weight:600;width:100%;
+}
+[data-add]:hover{background:var(--accent-soft);border-color:var(--accent);border-style:solid}
+
+/* ---------- severity ---------- */
+select.lvl{font-weight:700}
+select.lvl-low{background-color:var(--ok-bg);color:var(--ok);border-color:var(--ok-line)}
+select.lvl-medium{background-color:var(--warn-bg);color:var(--warn);border-color:var(--warn-line)}
+select.lvl-high{background-color:var(--bad-bg);color:var(--bad);border-color:var(--bad-line)}
+.tag{
+  display:inline-block;padding:3px 11px;border-radius:var(--r-full);
+  font-size:11.5px;font-weight:700;letter-spacing:.02em;border:1px solid transparent;white-space:nowrap;
+}
+.tag-low{background:var(--ok-bg);color:var(--ok);border-color:var(--ok-line)}
+.tag-medium{background:var(--warn-bg);color:var(--warn);border-color:var(--warn-line)}
+.tag-high{background:var(--bad-bg);color:var(--bad);border-color:var(--bad-line)}
+
+/* ---------- signature ---------- */
+.sig{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:30px;text-align:center;font-size:12.5px;color:var(--tx-2)}
+.sig div{border-top:1.5px solid var(--line-2);padding-top:7px}
+@media(max-width:560px){.sig{grid-template-columns:1fr;gap:20px}}
+
+/* ---------- QR ---------- */
+.qr{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
+.qr h2{margin-bottom:0}
+#qrc{width:min(100%,360px);height:auto;image-rendering:pixelated;background:#fff;border-radius:var(--r-md);border:1px solid var(--line);padding:10px}
+
+/* ---------- meta chips (report header) ---------- */
+.meta-strip{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:2px}
+.chip{
+  display:inline-flex;align-items:center;padding:5px 13px;border-radius:var(--r-full);
+  font-size:12.5px;font-weight:650;background:var(--surface-2);color:var(--tx-2);
+  border:1px solid var(--line);font-family:var(--mono);
+}
+.chip-edit{background:var(--warn-bg);color:var(--warn);border-color:var(--warn-line);font-family:var(--f)}
+/* report view read-only values */
+.g2>div{padding:2px 0}
+.g2>div>span.eyebrow+*{display:block}
+
+/* ---------- brand / logo carousel ---------- */
+.brand{display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;margin:2px 0 16px}
+.brand img{width:clamp(210px,58vw,320px);height:auto;max-height:180px;object-fit:contain;border-radius:var(--r-md)}
+.logo-carousel{position:relative;width:clamp(210px,58vw,320px);margin:0 auto;overflow:hidden;border-radius:var(--r-md)}
+.logo-track{display:flex;transition:transform var(--t3) var(--ease)}
+.logo-track img{flex:0 0 100%;width:100%;height:auto;max-height:180px;object-fit:contain;padding:0}
+.logo-dots{display:flex;justify-content:center;gap:7px;margin-top:2px}
+.logo-dots button{
+  min-height:0;min-width:0;width:9px;height:9px;border-radius:var(--r-full);padding:0;
+  border:none;background:var(--line-2);cursor:pointer;transition:width var(--t2) var(--ease),background var(--t2) var(--ease);
+}
+.logo-dots button.on{background:linear-gradient(90deg,var(--brand-600),var(--accent));width:24px}
+.logo-arrow{
+  position:absolute;top:50%;transform:translateY(-50%);z-index:2;
+  width:32px;height:32px;min-height:32px;border-radius:var(--r-full);
+  display:flex;align-items:center;justify-content:center;font-size:14px;
+  background:rgba(10,74,107,.5);border:1px solid rgba(255,255,255,.35);color:#fff;
+  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+}
+.logo-arrow:hover{background:rgba(10,74,107,.85);border-color:rgba(255,255,255,.6);box-shadow:0 4px 14px rgba(10,74,107,.3)}
+.logo-arrow.prev{left:8px}.logo-arrow.next{right:8px}
+.brand-text h1{letter-spacing:-.02em}
+.brand-text small{display:block;color:var(--mu);font-size:11.5px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;margin-top:5px}
+
+/* ---------- topbar ---------- */
+.topbar{
+  position:sticky;top:0;z-index:40;display:flex;justify-content:space-between;align-items:center;gap:12px;
+  margin:0 -18px 18px;padding:11px 18px;font-size:13px;
+  background:rgba(255,255,255,.82);border-bottom:1px solid var(--line);
+  -webkit-backdrop-filter:blur(14px) saturate(1.4);backdrop-filter:blur(14px) saturate(1.4);
+}
+.topbar>span{display:flex;align-items:center;gap:9px;min-width:0}
+.topbar b{color:var(--brand);font-weight:700}
+.topbar .rowbtn{display:flex;gap:8px;flex-shrink:0}
+.topbar button{padding:7px 13px;min-height:38px;font-size:13px;font-weight:600}
+#menubtn{
+  font-size:19px;line-height:1;padding:0;width:40px;min-height:40px;min-width:40px;
+  border-color:var(--line-2);color:var(--brand);
+}
+#menubtn:hover{background:var(--brand);color:#fff;border-color:var(--brand)}
+#logout:hover{background:var(--bad-bg);border-color:var(--bad-line);color:var(--bad);box-shadow:none}
+
+/* ---------- sync status ---------- */
+#syncCard{
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:14px 18px;background:var(--surface-2);border-style:solid;
+}
+#syncCard h2{margin:0;font-size:13.5px}
+#syncCard .mu:first-of-type{flex:1 1 190px;margin:0}
+#fbMsg{
+  display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:650;
+  padding:6px 13px;border-radius:var(--r-full);background:var(--surface-3);color:var(--mu);
+  border:1px solid var(--line);white-space:nowrap;
+}
+#fbMsg::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--mu-2);flex:0 0 auto}
+#fbMsg[data-state="online"]{background:var(--ok-bg);color:var(--ok);border-color:var(--ok-line)}
+#fbMsg[data-state="online"]::before{background:var(--ok);box-shadow:0 0 0 3px rgba(21,128,61,.18)}
+#fbMsg[data-state="offline"]{background:var(--warn-bg);color:var(--warn);border-color:var(--warn-line)}
+#fbMsg[data-state="offline"]::before{background:var(--warn)}
+#fbMsg[data-state="loading"]::before{background:var(--accent);animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.35;transform:scale(.82)}50%{opacity:1;transform:scale(1)}}
+
+/* ---------- side panel ---------- */
+#sidebackdrop{position:fixed;inset:0;background:rgba(9,26,40,.5);z-index:90;opacity:0;pointer-events:none;transition:opacity var(--t2) var(--ease);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
 #sidebackdrop.open{opacity:1;pointer-events:auto}
-#sidepanel{position:fixed;top:0;left:0;bottom:0;width:min(88vw,340px);background:var(--card);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-right:1px solid var(--bd);box-shadow:8px 0 28px rgba(11,77,110,.18);z-index:99;transform:translateX(-105%);transition:transform .28s ease;display:flex;flex-direction:column}
+#sidepanel{
+  position:fixed;top:0;left:0;bottom:0;width:min(90vw,352px);z-index:95;
+  display:flex;flex-direction:column;background:var(--surface);
+  border-right:1px solid var(--line);box-shadow:var(--sh-4);
+  transform:translateX(-104%);transition:transform var(--t3) var(--ease);
+}
 #sidepanel.open{transform:translateX(0)}
-.side-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px;border-bottom:1px solid var(--bd)}
-.side-head b{color:var(--ac);font-size:16px}
-.side-head .count{font-size:12px;color:var(--mu)}
-#sideclose{border:none;background:transparent;color:var(--mu);font-size:22px;min-height:40px;min-width:40px;padding:4px 8px}
-.side-search{padding:10px 14px;border-bottom:1px solid var(--bd)}
-.side-list{flex:1;overflow-y:auto;padding:8px;-webkit-overflow-scrolling:touch}
-.side-item{border:1px solid var(--bd);border-radius:10px;padding:10px;margin-bottom:8px;background:var(--in);cursor:pointer;transition:box-shadow .15s}
-.side-item:hover{box-shadow:0 4px 14px rgba(11,77,110,.15)}
-.side-item.active{border-color:var(--ac2);box-shadow:0 0 0 2px rgba(15,163,163,.2)}
-.side-item .t{font-weight:700;font-size:14px;color:var(--ac)}
-.side-item .s{font-size:12px;color:var(--mu);margin-top:2px}
-.side-item .btns{display:flex;gap:6px;margin-top:8px}
-.side-item .btns button{flex:1;min-height:36px;font-size:13px;padding:6px 8px}
-.side-foot{padding:10px 14px;border-top:1px solid var(--bd);display:flex;gap:8px}
-.side-foot button{flex:1;min-height:40px;font-size:13px}
-/* ===== Responsive: phone ===== */
+.side-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:16px 16px 13px;border-bottom:1px solid var(--line)}
+.side-head b{color:var(--brand);font-size:15px;display:block}
+.side-head .count{font-size:12px;color:var(--mu);margin-top:2px}
+#sideclose{border:none;background:transparent;color:var(--mu);font-size:24px;min-height:40px;min-width:40px;padding:0;line-height:1;border-radius:var(--r-sm)}
+#sideclose:hover{background:var(--surface-3);color:var(--bad);box-shadow:none}
+.side-search{padding:12px 16px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+.side-search input{min-height:42px;background:var(--surface)}
+.side-list{flex:1;overflow-y:auto;padding:12px;-webkit-overflow-scrolling:touch}
+.side-item{
+  border:1px solid var(--line);border-radius:var(--r-lg);padding:13px;margin-bottom:10px;
+  background:var(--surface-2);cursor:pointer;transition:border-color var(--t1) var(--ease),box-shadow var(--t1) var(--ease),transform var(--t1) var(--ease);
+}
+.side-item:hover{border-color:var(--line-2);box-shadow:var(--sh-2);transform:translateY(-1px)}
+.side-item.active{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 3px rgba(13,154,154,.13)}
+.side-item .t{font-weight:700;font-size:14.5px;color:var(--brand);line-height:1.3}
+.side-item .s{font-size:12px;color:var(--mu);margin-top:3px;line-height:1.45}
+.side-item .btns{display:flex;gap:6px;margin-top:11px}
+.side-item .btns button{flex:1;min-height:36px;font-size:12.5px;padding:6px 8px;border-radius:var(--r-sm)}
+.side-item .btns button:hover{background:var(--surface)}
+.side-item .btns .sdel:hover{background:var(--bad-bg);border-color:var(--bad-line);color:var(--bad);box-shadow:none}
+.side-foot{padding:12px 16px;border-top:1px solid var(--line);display:flex;gap:8px;background:var(--surface-2)}
+.side-foot button{flex:1;min-height:42px;font-size:12.5px;padding:8px 6px;border-radius:var(--r-sm)}
+#sideclear{border-color:var(--bad-line);background:var(--bad-bg);color:var(--bad)}
+#sideclear:hover{background:#fbdede;border-color:var(--bad);box-shadow:none}
+
+/* ---------- empty state ---------- */
+.empty{text-align:center;padding:34px 18px;color:var(--mu)}
+.empty .ico{
+  width:48px;height:48px;margin:0 auto 12px;border-radius:var(--r-lg);
+  display:flex;align-items:center;justify-content:center;font-size:22px;
+  background:var(--surface-3);color:var(--mu-2);border:1px solid var(--line);
+}
+.empty strong{display:block;color:var(--tx-2);font-size:14.5px;margin-bottom:4px}
+.empty p{font-size:13px;margin:0}
+.side-list .empty{padding:40px 14px}
+
+/* ---------- list view rows ---------- */
+#lt{cursor:default}
+#lt tbody tr.lr{cursor:pointer}
+#lt .x.edit,#lt .x.del{min-height:34px;min-width:auto;padding:5px 11px;font-size:12.5px;border-radius:var(--r-sm)}
+#lt .x.del{border-color:var(--bad-line);background:var(--bad-bg);color:var(--bad)}
+#lt .x.del:hover{background:#fbdede;border-color:var(--bad)}
+#lt .x.edit:hover{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-ink)}
+
+/* ---------- login ---------- */
+.login-wrap{max-width:428px;margin:min(9vh,72px) auto;padding:18px}
+.login-card{text-align:center;padding:28px 24px}
+.login-card h2{justify-content:center;margin-bottom:18px}
+.login-card .field{margin-bottom:15px}
+.login-card .eyebrow{margin-bottom:16px}
+#lg_go{width:100%;margin-top:4px;min-height:50px;font-size:15.5px}
+.err{
+  display:flex;align-items:center;gap:7px;color:var(--bad);font-size:13px;
+  font-weight:600;min-height:0;margin:0;padding:0;
+}
+.err:not(:empty){min-height:0;margin:12px 0;padding:10px 13px;background:var(--bad-bg);border:1px solid var(--bad-line);border-radius:var(--r-md)}
+.login-hint{margin:16px 0 0;font-size:12.5px;color:var(--mu)}
+.login-hint b{color:var(--tx-2);font-family:var(--mono);background:var(--surface-3);padding:2px 7px;border-radius:var(--r-xs);border:1px solid var(--line)}
+
+/* ---------- scrollbars ---------- */
+@supports selector(::-webkit-scrollbar){
+  ::-webkit-scrollbar{width:11px;height:11px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:var(--r-full);border:3px solid var(--bg)}
+  ::-webkit-scrollbar-thumb:hover{background:var(--mu-2)}
+  .side-list::-webkit-scrollbar-thumb{border-color:var(--surface)}
+}
+
+/* ---------- motion ---------- */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
+}
+
+/* ---------- responsive ---------- */
 @media(max-width:640px){
-  body{font-size:14px}
-  main{padding:10px}
-  .card{padding:14px;border-radius:10px}
+  body{font-size:14.5px}
+  main{padding:0 12px 56px}
+  .card{padding:17px 15px;border-radius:var(--r-lg);margin-bottom:13px}
+  .top{padding-top:22px}
   .g2{grid-template-columns:1fr}
-  .row{grid-template-columns:1fr 1fr;gap:8px}
-  .row> :first-child{grid-column:1/-1}
-  .row.s{grid-template-columns:1fr 40px}
-  .row.s> :first-child{grid-column:1/2}
+  .row,.row.s{grid-template-columns:1fr;gap:9px;padding:13px}
+  .row .x{justify-self:end;margin-top:-4px}
   .act{flex-direction:column}
   .act button{width:100%}
-  .sig{grid-template-columns:1fr;gap:16px}
-  .topbar{flex-direction:column;align-items:stretch;text-align:center}
-  .topbar .rowbtn{display:flex;gap:8px}
-  .topbar .rowbtn button{flex:1}
-  .login-wrap{margin:2vh auto;padding:10px}
+  .topbar{margin:0 -12px 14px;padding:10px 12px}
+  .topbar button{padding:6px 11px;font-size:12.5px;min-height:36px}
+  .login-wrap{margin:min(5vh,36px) auto;padding:12px}
+  .login-card{padding:22px 18px}
+  .brand{margin-bottom:12px}
+  .sync-compact #syncCard{flex-direction:column;align-items:flex-start;gap:10px}
+  #syncCard{width:100%}
 }
-/* ===== Wide computer: use space nicely ===== */
-@media(min-width:900px){
-  main{max-width:860px}
-  .card{padding:22px}
-  input,select,textarea{font-size:15px;min-height:40px}
+@media(max-width:400px){
+  .side-foot{flex-wrap:wrap}
+  .side-foot button{flex:1 1 44%}
+  .logo-arrow{width:28px;height:28px;min-height:28px}
 }
-/* ===== Landscape phones ===== */
-@media(max-height:500px) and (orientation:landscape){
-  .login-wrap{margin:1vh auto}
-  .brand img{max-height:120px}
-}
-.sig{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:28px;text-align:center;font-size:13px}
-.sig div{border-top:1px solid var(--tx);padding-top:4px}
-@media print{.noprint{display:none}body{background:#fff}body::before,body::after{display:none!important}.card{border:1px solid #ccc;box-shadow:none;backdrop-filter:none;background:#fff}main{max-width:100%}input,select,textarea{border:none;background:#fff;min-height:auto;padding:2px}}
 
-</style></head><body>
+/* ---------- wide screens ---------- */
+@media(min-width:960px){
+  main{max-width:880px}
+  .card{padding:26px}
+  input,select,textarea{font-size:15px;min-height:44px}
+  .row{grid-template-columns:165px 1fr 128px 44px}
+  .row.s{grid-template-columns:165px 1fr 44px}
+}
+
+/* ---------- print ---------- */
+@media print{
+  .noprint{display:none!important}
+  body{background:#fff}
+  body::before,body::after{display:none!important}
+  .topbar,#login,#sidepanel,#sidebackdrop{display:none!important}
+  main{max-width:100%;padding:0}
+  .card{border:1px solid #ccc;box-shadow:none;background:#fff;padding:14px;margin-bottom:12px;break-inside:avoid}
+  .top::before{display:none}
+  input,select,textarea{border:none;background:#fff;min-height:auto;padding:1px 2px;font-size:12pt}
+  .row{border:1px solid #ccc;background:#fff;padding:8px;grid-template-columns:150px 1fr 118px 44px}
+  .fl>span{color:#666}
+  .scroll{border:1px solid #ccc;overflow:visible}
+  table{min-width:0;font-size:10pt}
+  th{background:#0b4d6e!important;color:#fff!important;position:static}
+  .brand img{width:240px;max-height:130px}
+  .brand{gap:6px;margin:0 0 10px}
+  .logo-carousel{width:240px}
+  .logo-track{transform:none!important}
+  .logo-track img{max-height:130px}
+  .logo-track img+img,.logo-arrow,.logo-dots{display:none!important}
+  .x,.act,[data-add]{display:none!important}
+  h2{margin-bottom:8px}
+  a[href]:after{content:""}
+}
+</style>
+</head><body>
 <div id="sidebackdrop"></div>
 <nav id="sidepanel" aria-label="Submitted reports panel">
 <div class="side-head"><div><b>Submitted reports</b><div class="count" id="sidecount">0 report(s)</div></div><button id="sideclose" aria-label="Close panel">&times;</button></div>
 <div class="side-search"><input id="sideq" placeholder="Search site, tech, report no."></div>
 <div class="side-list" id="sidelist"></div>
-<div class="side-foot"><button class="p" id="sidenew">+ New</button><button id="sideall">Full list</button><button id="sideclear" style="background:#fee;color:#c00;border-color:#fcc">Clear all</button></div>
+<div class="side-foot"><button class="p" id="sidenew">+ New</button><button id="sideall">Full list</button><button id="sideclear" class="danger">Clear all</button></div>
 </nav>
 <main>
 <div id="login" class="login-wrap">
 <div class="card top login-card">
-	
+
 <div class="brand"><div class="logo-carousel"><div class="logo-track"><img src="logoo.png" alt="Santa Clara Shipping Corp. logo"><img src="penafrancia.png" alt="Penafrancia logo" onerror="this.onerror=null;this.src='logo.png'"></div><button type="button" class="logo-arrow prev" aria-label="Previous logo">&#10094;</button><button type="button" class="logo-arrow next" aria-label="Next logo">&#10095;</button></div><div class="logo-dots"><button type="button" class="on" aria-label="Logo 1"></button><button type="button" aria-label="Logo 2"></button></div><div class="brand-text"><h1>IT Service Report</h1><small>Santa Clara Shipping Corp.</small></div></div>
-<h2 style="margin-top:4px">Admin login</h2>
-<div style="text-align:left"><label>Username</label><input id="lg_u" autocomplete="username" placeholder="Enter username"></div>
-<div style="text-align:left"><label>Password</label><div class="pwrow"><input id="lg_p" type="password" autocomplete="current-password" placeholder="Enter password"><button type="button" id="lg_show" title="Show password">Show</button></div></div>
-<div class="err" id="lg_err"></div>
-<button class="p" id="lg_go" style="width:100%">Login</button>
-<p class="mu" style="margin:10px 0 0">Default: <b>admin</b> / <b>admin123</b></p>
+<span class="eyebrow">Team workspace</span>
+<h2>Sign in to continue</h2>
+<div class="field"><label for="lg_u">Username</label><input id="lg_u" autocomplete="username" placeholder="Enter username"></div>
+<div class="field"><label for="lg_p">Password</label><div class="pwrow"><input id="lg_p" type="password" autocomplete="current-password" placeholder="Enter password"><button type="button" id="lg_show" title="Show password">Show</button></div></div>
+<div class="err" id="lg_err" role="alert" aria-live="polite"></div>
+<button class="p" id="lg_go">Sign in</button>
+<p class="mu login-hint">Default access &mdash; <b>admin</b> / <b>admin123</b></p>
 </div>
 </div>
 <div id="app" hidden>
 <div class="topbar noprint"><span><button id="menubtn" title="Submitted reports">&#9776;</button> Logged in as <b id="who">admin</b></span><span class="rowbtn"><button id="logout">Logout</button></span></div>
 <div id="form">
 	
-<div class="card top">
-	
-	<div class="brand"><div class="logo-carousel"><div class="logo-track"><img src="logoo.png" alt="Santa Clara Shipping Corp.logo"><img src="penafrancia.png" alt="Penafrancia logo" onerror="this.onerror=null;this.src='logo.png'"></div><button type="button" class="logo-arrow prev" aria-label="Previous logo">&#10094;</button><button type="button" class="logo-arrow next" aria-label="Next logo">&#10095;</button></div><div class="logo-dots"><button type="button" class="on" aria-label="Logo 1"></button><button type="button" aria-label="Logo 2"></button></div><div class="brand-text"><h1>IT Service Report</h1><small>Santa Clara Shipping Corp.</small></div></div><div class="mu">Preventive maintenance site visit. Fill in and submit to get a QR code for the report. Works offline. Reports are saved on this device only.</div><button id="showlist" style="margin-top:10px">Saved reports</button></div>
+<div class="card top hero">
+	<div class="brand"><div class="logo-carousel"><div class="logo-track"><img src="logoo.png" alt="Santa Clara Shipping Corp.logo"><img src="penafrancia.png" alt="Penafrancia logo" onerror="this.onerror=null;this.src='logo.png'"></div><button type="button" class="logo-arrow prev" aria-label="Previous logo">&#10094;</button><button type="button" class="logo-arrow next" aria-label="Next logo">&#10095;</button></div><div class="logo-dots"><button type="button" class="on" aria-label="Logo 1"></button><button type="button" aria-label="Logo 2"></button></div><div class="brand-text"><h1>IT Service Report</h1><small>Santa Clara Shipping Corp.</small></div></div>
+<div class="mu">Preventive maintenance site visit. Fill in and submit to get a QR code for the report. Works offline. Reports are saved on this device only.</div>
+<div class="act" style="margin-top:14px"><button id="showlist">Saved reports</button></div></div>
 <div class="card"><h2>Visit details</h2>
 	
 <div class="g2"><div><label>Client / Site</label><input id="site"></div><div><label>Date of visit</label><input id="date" type="date"></div>
 <div><label>Site address</label><input id="addr"></div><div><label>Site contact</label><input id="contact"></div>
 <div><label>Technician</label><select id="tech"><option value="">Select technician</option><option>IT-Ed</option><option>IT-Jaren</option><option>IT-Mark</option><option>IT-Van</option></select></div><div><label>Service type</label><select id="stype"><option>Preventive Maintenance</option><option>Repair</option><option>Installation</option><option>Inspection</option></select></div></div></div>
-<div class="card"><h2>Equipment summary</h2><div class="scroll"><table id="eq"><tr><th>System</th><th>Total</th><th>Working</th><th>Faulty</th><th>Work performed</th></tr></table></div></div>
+<div class="card"><h2>Equipment summary</h2><div class="scroll"><table id="eq"><thead><tr><th>System</th><th>Total</th><th>Working</th><th>Faulty</th><th>Work performed</th></tr></thead><tbody></tbody></table></div></div>
 <div class="card"><h2>Findings (issues indicated)</h2><div id="find"></div><button data-add="find">+ Add finding</button></div>
 <div class="card"><h2>Overall remarks</h2><textarea id="rem"></textarea>
 <div class="g2"><div><label>Client representative</label><input id="client"></div><div></div></div></div>
 <div class="act"><button class="p" id="submit">Submit and generate QR</button></div>
-<div class="card" id="syncCard" style="margin-top:14px"><h2>Online shared storage</h2>
-<div class="mu">Reports sync automatically to the team Firebase database.</div>
-<div class="mu" id="fbMsg">Connecting...</div></div>
+<div class="card" id="syncCard"><h2>Shared storage</h2>
+<div class="mu">Reports sync automatically to the team database.</div>
+<div class="mu" id="fbMsg" data-state="loading" role="status" aria-live="polite">Connecting...</div></div>
 <p class="mu" id="msg"></p>
 </div>
 <div id="view" hidden></div>
@@ -1545,14 +1861,19 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const opts=a=>a.map(x=>`<option>${x}</option>`).join("");
 let db=null;
-SYS.forEach(s=>{$("eq").insertAdjacentHTML("beforeend",`<tr><td><b>${s}</b></td><td><input type="number" min="0"></td><td><input type="number" min="0"></td><td><input type="number" min="0"></td><td><input></td></tr>`)});
+SYS.forEach(s=>{$("eq").querySelector("tbody").insertAdjacentHTML("beforeend",`<tr><td><b>${s}</b></td><td><input type="number" min="0" inputmode="numeric" aria-label="${s} total"></td><td><input type="number" min="0" inputmode="numeric" aria-label="${s} working"></td><td><input type="number" min="0" inputmode="numeric" aria-label="${s} faulty"></td><td><input aria-label="${s} work performed"></td></tr>`)});
 $("date").valueAsDate=new Date();
 const kinds={find:["Severity",["Low","Medium","High"]]};
 function paintLvl(sel){if(!sel)return;const v=(sel.value||"").toLowerCase();sel.classList.remove("lvl-low","lvl-medium","lvl-high");if(v)sel.classList.add("lvl-"+v);}
 function addRow(k){
   const k2=kinds[k],d=document.createElement("div");
   d.className="row"+(k2?"":" s");
-  d.innerHTML=`<select>${opts(["General",...SYS])}</select><input placeholder="Details">${k2?`<select class="lvl">${opts(k2[1])}</select>`:""}<button class="x">×</button>`;
+  // NOTE: list()/fillForm() read r.querySelectorAll("select,input") by position,
+  // so the control order below must stay: system, details, severity.
+  d.innerHTML=`<label class="fl"><span>System</span><select>${opts(["General",...SYS])}</select></label>`+
+   `<label class="fl"><span>Details</span><input placeholder="Describe the issue"></label>`+
+   (k2?`<label class="fl"><span>Severity</span><select class="lvl">${opts(k2[1])}</select></label>`:"")+
+   `<button class="x" type="button" aria-label="Remove this row">×</button>`;
   d.querySelector(".x").onclick=()=>d.remove();
   const lv=d.querySelector("select.lvl");
   if(lv){paintLvl(lv);lv.onchange=()=>paintLvl(lv);}
@@ -1567,18 +1888,22 @@ function collect(no){
 }
 function sect(t,items,lvl){
  if(!items.length)return`<h2>${t}</h2><p class="mu">None recorded.</p>`;
-  return`<h2>${t}</h2><div class="scroll"><table><tr><th>#</th><th>System</th><th>Details</th>${lvl?`<th>${lvl}</th>`:""}</tr>${items.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.sys)}</td><td>${esc(x.text)}</td>${lvl?`<td><span class="tag tag-${esc((x.lvl||"").toLowerCase())}">${esc(x.lvl)}</span></td>`:""}</tr>`).join("")}</table></div>`;
+  return`<h2>${t}</h2><div class="scroll"><table><thead><tr><th>#</th><th>System</th><th>Details</th>${lvl?`<th>${lvl}</th>`:""}</tr></thead><tbody>${items.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.sys)}</td><td>${esc(x.text)}</td>${lvl?`<td><span class="tag tag-${esc((x.lvl||"").toLowerCase())}">${esc(x.lvl)}</span></td>`:""}</tr>`).join("")}</tbody></table></div>`;
 }
 function render(d,qrOn,editNo){
  $("form").hidden=true;$("listv").hidden=true;$("view").hidden=false;
- $("view").innerHTML=`<div class="card top"><div class="brand"><div class="logo-carousel"><div class="logo-track"><img src="logoo.png" alt="Santa Clara Shipping Corp. logo"><img src="penafrancia.png" alt="Penafrancia logo" onerror="this.onerror=null;this.src='logo.png'"></div><button type="button" class="logo-arrow prev" aria-label="Previous logo">&#10094;</button><button type="button" class="logo-arrow next" aria-label="Next logo">&#10095;</button></div><div class="logo-dots"><button type="button" class="on" aria-label="Logo 1"></button><button type="button" aria-label="Logo 2"></button></div><div class="brand-text"><h1>IT Service Report</h1><small>Santa Clara Shipping Corp.</small></div></div><div class="mu">${esc(d.no)} · ${esc(d.stype)}${editNo?" · Editing":""}</div>
- <div class="g2"><div><label>Client / Site</label>${esc(d.site)}</div><div><label>Date</label>${esc(d.date)}</div><div><label>Address</label>${esc(d.addr)}</div><div><label>Site contact</label>${esc(d.contact)}</div><div><label>Technician</label>${esc(d.tech)}</div></div></div>
- <div class="card"><h2>Equipment summary</h2><div class="scroll"><table><tr><th>System</th><th>Total</th><th>Working</th><th>Faulty</th><th>Work performed</th></tr>${d.eq.map(r=>`<tr><td>${r.sys}</td><td>${esc(r.total)}</td><td>${esc(r.ok)}</td><td>${esc(r.bad)}</td><td>${esc(r.work)}</td></tr>`).join("")}</table></div></div>
+  $("view").innerHTML=`<div class="card top hero"><div class="brand"><div class="logo-carousel"><div class="logo-track"><img src="logoo.png" alt="Santa Clara Shipping Corp. logo"><img src="penafrancia.png" alt="Penafrancia logo" onerror="this.onerror=null;this.src='logo.png'"></div><button type="button" class="logo-arrow prev" aria-label="Previous logo">&#10094;</button><button type="button" class="logo-arrow next" aria-label="Next logo">&#10095;</button></div><div class="logo-dots"><button type="button" class="on" aria-label="Logo 1"></button><button type="button" aria-label="Logo 2"></button></div><div class="brand-text"><h1>IT Service Report</h1><small>Santa Clara Shipping Corp.</small></div></div>
+  <div class="meta-strip"><span class="chip">${esc(d.no)}</span><span class="chip">${esc(d.stype)}</span>${editNo?`<span class="chip chip-edit">Editing</span>`:""}</div></div>
+  <div class="card"><h2>Visit details</h2>
+  <div class="g2"><div><span class="eyebrow">Client / Site</span>${esc(d.site)}</div><div><span class="eyebrow">Date</span>${esc(d.date)}</div>
+  <div><span class="eyebrow">Address</span>${esc(d.addr)||'<span class="mu">&mdash;</span>'}</div><div><span class="eyebrow">Site contact</span>${esc(d.contact)||'<span class="mu">&mdash;</span>'}</div>
+  <div><span class="eyebrow">Technician</span>${esc(d.tech)}</div></div></div>
+  <div class="card"><h2>Equipment summary</h2><div class="scroll"><table><thead><tr><th>System</th><th>Total</th><th>Working</th><th>Faulty</th><th>Work performed</th></tr></thead><tbody>${d.eq.map(r=>`<tr><td>${r.sys}</td><td>${esc(r.total)}</td><td>${esc(r.ok)}</td><td>${esc(r.bad)}</td><td>${esc(r.work)}</td></tr>`).join("")}</tbody></table></div></div>
   <div class="card">${sect("Findings (issues indicated)",d.find||[],"Severity")}</div>
   <div class="card"><h2>Overall remarks</h2><p>${esc(d.rem)||'<span class="mu">None.</span>'}</p>
- <div class="sig"><div>${esc(d.tech)||"&nbsp;"}<br>Technician</div><div>${esc(d.client)||"&nbsp;"}<br>Client representative</div></div></div>
- ${qrOn?`<div class="card qr"><h2>Scan to read this report</h2><canvas id="qrc"></canvas><div class="mu">Scanning shows the report as text on any phone. <span id="qrn"></span></div><button class="noprint" id="dlqr">Download QR image</button></div>`:""}
- <div class="act noprint"><button class="p" onclick="print()">Print / save PDF</button><button id="xl">Download Excel</button>${editNo?`<button id="edback">Back to edit</button>`:""}<button onclick="showList()">Saved reports</button><button id="newrep">New report</button></div>`;
+  <div class="sig"><div>${esc(d.tech)||"&nbsp;"}<br>Technician</div><div>${esc(d.client)||"&nbsp;"}<br>Client representative</div></div></div>
+  ${qrOn?`<div class="card qr"><h2>Scan to read this report</h2><canvas id="qrc" role="img" aria-label="QR code for this report"></canvas><div class="mu">Scanning shows the report as text on any phone. <span id="qrn"></span></div><button class="noprint" id="dlqr">Download QR image</button></div>`:""}
+  <div class="act noprint"><button class="p" onclick="print()">Print / save PDF</button><button id="xl">Download Excel</button>${editNo?`<button id="edback">Back to edit</button>`:""}<button onclick="showList()">Saved reports</button><button id="newrep">New report</button></div>`;
 
 }
 const u8=t=>unescape(encodeURIComponent(t));
@@ -1602,9 +1927,13 @@ const KEY="sr_reports_v1";
 const FIREBASE_URL = "https://servicereport-b0a3d-default-rtdb.asia-southeast1.firebasedatabase.app/";
 let fbDb=null;
 
+// Sync status pill: text + state for the coloured indicator
+function fbStatus(state,text){const el=$("fbMsg");if(!el)return;el.dataset.state=state;el.textContent=text;}
+
 function fbInit(){
   fbDb={reports:{},_loaded:false,_listeners:[],on(cb){this._listeners.push(cb)},emit(){this._listeners.forEach(cb=>cb(this.reports))}};
   const base=FIREBASE_URL.replace(/\/$/,"");
+  fbStatus("loading","Connecting to team database...");
   fetch(`${base}/reports.json`).then(r=>r.json()).then(data=>{
     fbDb.reports=data||{}; 
     fbDb._loaded=true;
@@ -1618,7 +1947,7 @@ function fbInit(){
         localStorage.removeItem("fb_"+KEY);
       }catch(e){}
     }
-    if($("fbMsg")) $("fbMsg").textContent = "Online - synced with team";
+    fbStatus("online","Online · synced with team");
     // Refresh UI now that Firebase is loaded
     refreshSide(EDIT_NO); 
     if($("lt")) drawList();
@@ -1626,7 +1955,7 @@ function fbInit(){
     fbDb.reports={}; 
     fbDb._loaded=true;
     fbDb.emit();
-    if($("fbMsg")) $("fbMsg").textContent = "Offline - using local storage";
+    fbStatus("offline","Offline · saving on this device only");
     refreshSide(EDIT_NO);
     if($("lt")) drawList();
   });
@@ -1776,7 +2105,8 @@ function refreshSide(activeNo){
  const rows=all.filter(r=>!q||[r.site,r.tech,r.no,r.stype].join(" ").toLowerCase().includes(q));
  if($("sidecount"))$("sidecount").textContent=all.length+" report(s)";
  if(!$("sidelist"))return;
- $("sidelist").innerHTML=rows.length?rows.map(r=>`<div class="side-item${r.no===activeNo?" active":""}" data-no="${esc(r.no)}"><div class="t">${esc(r.site||"(no site)")}</div><div class="s">${esc(r.date||"")} · ${esc(r.tech||"")} · ${esc(r.no||"")}<br>${esc(r.stype||"")} · ${(r.find||[]).length} issue(s)</div><div class="btns"><button class="sview" data-no="${esc(r.no)}">Open</button><button class="sedit" data-no="${esc(r.no)}">Edit</button><button class="sdel" data-no="${esc(r.no)}">Del</button></div><div class="btns"><button class="sprint" data-no="${esc(r.no)}">Print</button><button class="sxl" data-no="${esc(r.no)}">Excel</button></div></div>`).join(""):'<p class="mu" style="padding:8px">No submitted reports yet.</p>';
+ $("sidelist").innerHTML=rows.length?rows.map(r=>`<div class="side-item${r.no===activeNo?" active":""}" data-no="${esc(r.no)}"><div class="t">${esc(r.site||"(no site)")}</div><div class="s">${esc(r.date||"")} · ${esc(r.tech||"")} · ${esc(r.no||"")}<br>${esc(r.stype||"")} · ${(r.find||[]).length} issue(s)</div><div class="btns"><button class="sview" data-no="${esc(r.no)}">Open</button><button class="sedit" data-no="${esc(r.no)}">Edit</button><button class="sdel" data-no="${esc(r.no)}">Del</button></div><div class="btns"><button class="sprint" data-no="${esc(r.no)}">Print</button><button class="sxl" data-no="${esc(r.no)}">Excel</button></div></div>`).join("")
+  :`<div class="empty"><div class="ico">&#128203;</div><strong>No reports yet</strong><p>Submitted reports will appear here and sync to your team.</p></div>`;
  $("sidelist").querySelectorAll(".side-item").forEach(it=>it.onclick=e=>{
    if(e.target.closest("button"))return;
    const d=store.get(it.dataset.no); if(!d)return;
@@ -1823,10 +2153,10 @@ function initSide(){
 function showList(){
   $("form").hidden=true;$("view").hidden=true;$("listv").hidden=false;
   ALL=Object.values(store.all()).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.no||"").localeCompare(a.no||""));
-  $("listv").innerHTML=`<div class="card top"><div class="brand"><div class="logo-carousel"><div class="logo-track"><img src="logoo.png" alt="Santa Clara Shipping Corp. logo"><img src="penafrancia.png" alt="Penafrancia logo" onerror="this.onerror=null;this.src='logo.png'"></div><button type="button" class="logo-arrow prev" aria-label="Previous logo">&#10094;</button><button type="button" class="logo-arrow next" aria-label="Next logo">&#10095;</button></div><div class="logo-dots"><button type="button" class="on" aria-label="Logo 1"></button><button type="button" aria-label="Logo 2"></button></div><div class="brand-text"><h1>Saved reports</h1><small>Santa Clara Shipping Corp.</small></div></div><div class="mu">${ALL.length} report(s) on this device. Tap a row to open it.</div>
-<label>Search by site, technician, or report no.</label><input id="q" placeholder="Type to filter">
-<div class="act" style="margin-top:12px"><button class="p" id="newrep2">New report</button><button id="exportAll">Export all Excel (summary)</button><button id="printAll">Print all reports</button><button id="bk">Backup all (file)</button><button id="rs">Restore from backup</button><button id="clearAll" style="background:#fee;color:#c00;border-color:#fcc">Clear all</button><input id="rf" type="file" accept=".json,application/json" hidden></div>
-<p class="mu" id="lmsg">Saved reports live in this browser. Clearing browser data deletes them, so make a backup now and then.</p></div>
+  $("listv").innerHTML=`<div class="card top hero"><div class="brand"><div class="logo-carousel"><div class="logo-track"><img src="logoo.png" alt="Santa Clara Shipping Corp. logo"><img src="penafrancia.png" alt="Penafrancia logo" onerror="this.onerror=null;this.src='logo.png'"></div><button type="button" class="logo-arrow prev" aria-label="Previous logo">&#10094;</button><button type="button" class="logo-arrow next" aria-label="Next logo">&#10095;</button></div><div class="logo-dots"><button type="button" class="on" aria-label="Logo 1"></button><button type="button" aria-label="Logo 2"></button></div><div class="brand-text"><h1>Saved reports</h1><small>Santa Clara Shipping Corp.</small></div></div><div class="mu">${ALL.length} report(s) in the team database. Tap a row to open it.</div>
+<div class="field" style="margin-top:16px"><label for="q">Search by site, technician, or report no.</label><input id="q" placeholder="Type to filter"></div>
+<div class="act" style="margin-top:12px"><button class="p" id="newrep2">New report</button><button id="exportAll">Export all Excel</button><button id="printAll">Print all reports</button><button id="bk">Backup (file)</button><button id="rs">Restore</button><button id="clearAll" class="danger">Clear all</button><input id="rf" type="file" accept=".json,application/json" hidden></div>
+<p class="mu" id="lmsg" role="status" aria-live="polite" style="margin-top:12px">Clearing your browser data removes the local copy, so keep a backup now and then.</p></div>
 <div class="card"><div class="scroll"><table id="lt"></table></div></div>`;
   initCarousels();
   $("q").oninput=drawList;drawList();
@@ -1857,8 +2187,8 @@ $("bk").onclick=()=>dlBlob("service-reports-backup.json","application/json",JSON
 function drawList(){
  const q=$("q").value.trim().toLowerCase();
  const rows=ALL.filter(r=>!q||[r.site,r.tech,r.no,r.stype].join(" ").toLowerCase().includes(q));
- $("lt").innerHTML="<tr><th>Date</th><th>Site</th><th>Technician</th><th>Report no.</th><th>Issues</th><th></th></tr>"+
-  (rows.length?rows.map(r=>`<tr class="lr" data-no="${esc(r.no)}" style="cursor:pointer"><td>${esc(r.date)}</td><td>${esc(r.site)}</td><td>${esc(r.tech)}</td><td>${esc(r.no)}</td><td>${(r.find||[]).length}</td><td style="white-space:nowrap"><button class="x edit" data-no="${esc(r.no)}" title="Edit">Edit</button> <button class="x del" data-no="${esc(r.no)}" title="Delete">Delete</button></td></tr>`).join(""):'<tr><td colspan="6" class="mu">No reports found.</td></tr>');
+ $("lt").innerHTML=`<thead><tr><th>Date</th><th>Site</th><th>Technician</th><th>Report no.</th><th>Issues</th><th></th></tr></thead><tbody>`+
+   (rows.length?rows.map(r=>`<tr class="lr" data-no="${esc(r.no)}" style="cursor:pointer"><td>${esc(r.date)}</td><td>${esc(r.site)}</td><td>${esc(r.tech)}</td><td>${esc(r.no)}</td><td>${(r.find||[]).length}</td><td style="white-space:nowrap"><button class="x edit" data-no="${esc(r.no)}" title="Edit">Edit</button> <button class="x del" data-no="${esc(r.no)}" title="Delete">Delete</button></td></tr>`).join(""):`<tr><td colspan="6" class="mu" style="text-align:center;padding:26px 12px">${q?"No reports match your search.":"No reports found."}</td></tr>`)+`</tbody>`;
  $("lt").querySelectorAll(".lr").forEach(tr=>tr.onclick=()=>{const d=ALL.find(x=>x.no===tr.dataset.no);if(d)show(d)});
  $("lt").querySelectorAll(".del").forEach(b=>b.onclick=e=>{e.stopPropagation();
   if(confirm("Delete report "+b.dataset.no+"? This cannot be undone.")){
