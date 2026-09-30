@@ -1965,7 +1965,7 @@ function fbPut(report){
   const base=FIREBASE_URL.replace(/\/$/,"");
   return fetch(`${base}/reports/${encodeURIComponent(report.no)}.json`,{method:"PUT",body:JSON.stringify(report)}).then(r=>{
     if(!r.ok) throw new Error("Put failed: "+r.status);
-  }).catch(e=>{console.error("Firebase put error:",e); throw e});
+  }).catch(e=>{console.error("Firebase put error:",e); throw e}); 
 }
 
 function fbDel(no){
