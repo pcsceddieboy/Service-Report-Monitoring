@@ -1457,7 +1457,87 @@ function buildXlsx(d){
   ["_rels/.rels",H+`<Relationships xmlns="${P}"><Relationship Id="rId1" Type="${R}/officeDocument" Target="xl/workbook.xml"/></Relationships>`],
   ["xl/workbook.xml",H+`<workbook ${NS} xmlns:r="${R}"><sheets><sheet name="Service Report" sheetId="1" r:id="rId1"/></sheets></workbook>`],
   ["xl/_rels/workbook.xml.rels",H+`<Relationships xmlns="${P}"><Relationship Id="rId1" Type="${R}/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="${R}/styles" Target="styles.xml"/></Relationships>`],
-  ["xl/styles.xml",styles],["xl/worksheets/sheet1.xml",sheet]])}
+   ["xl/styles.xml",styles],["xl/worksheets/sheet1.xml",sheet]])}
+/* ===== All-reports summary workbook ===== */
+function buildAllXlsx(list){
+  const reports=[...list].sort((a,b)=>(a.date||"").localeCompare(b.date||""));
+  const X=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,"");
+  const fonts=[],fills=['<fill><patternFill patternType="none"/></fill>','<fill><patternFill patternType="gray125"/></fill>'],borders=['<border><left/><right/><top/><bottom/><diagonal/></border>'],xfs=[],xc={};
+  const ix=(a,s)=>{let i=a.indexOf(s);if(i<0){a.push(s);i=a.length-1}return i};
+  const bdr=(t,c)=>`<border><left${t}><color rgb="${c}"/></left><right${t}><color rgb="${c}"/></right><top${t}><color rgb="${c}"/></top><bottom${t}><color rgb="${c}"/></bottom><diagonal/></border>`;
+  const st=(o={})=>{const k=JSON.stringify(o);if(xc[k]!=null)return xc[k];
+   const f=ix(fonts,`<font>${o.b?"<b/>":""}<sz val="${o.sz||10}"/><color rgb="FF${o.c||"000000"}"/><name val="Arial"/></font>`);
+   const fl=o.f?ix(fills,`<fill><patternFill patternType="solid"><fgColor rgb="FF${o.f}"/><bgColor indexed="64"/></patternFill></fill>`):0;
+   const b=o.nb?0:ix(borders,bdr(' style="thin"',"FFA6A6A6"));
+   xfs.push(`<xf numFmtId="0" fontId="${f}" fillId="${fl}" borderId="${b}" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="${o.h||"left"}" vertical="${o.v||"top"}" wrapText="1"/></xf>`);
+   return xc[k]=xfs.length};
+  const cells={},rows={},merges=[],W=[18,14,20,12,20,10,10,10,30,40];let r=1;
+  const col=c=>"ABCDEFGHIJ"[c];
+  const put=(c1,c2,v,o)=>{(cells[r]=cells[r]||{})[c1]={v,s:st(o)};for(let c=c1+1;c<=c2;c++)cells[r][c]={v:"",s:st(o)};if(c2>c1)merges.push(`${col(c1)}${r}:${col(c2)}${r}`)};
+  const lines=(t,w)=>Math.max(1,Math.ceil(String(t||"").length/w)),ht=n=>{rows[r]=Math.max(20,n*13+8)};
+  const hdr=a=>{a.forEach(([c1,c2,t])=>put(c1,c2,t,{b:1,c:"FFFFFF",f:"1F3864",h:"center",v:"center"}));r++};
+  const num=v=>v!==""&&v!=null&&!isNaN(v)?Number(v):(v||"");
+  const sev=s=>({Low:0,Medium:1,High:2})[s]??-1;
+  const SEV={Low:{b:1,f:"C6EFCE",c:"1E7B34"},Medium:{b:1,f:"FFEB9C",c:"8A6100"},High:{b:1,f:"FFC7CE",c:"B3261E"}};
+  const sum=d=>{const t=[0,0,0];(d.eq||[]).forEach(e=>{t[0]+=+e.total||0;t[1]+=+e.ok||0;t[2]+=+e.bad||0});return t};
+
+  put(0,9,"IT SERVICE REPORTS - ALL REPORTS SUMMARY",{b:1,sz:16,c:"1F3864",nb:1,h:"center",v:"center"});rows[r]=30;r++;
+  put(0,9,reports.length+" report(s)  |  generated "+new Date().toLocaleString(),{c:"595959",nb:1,h:"center"});r+=2;
+
+  // --- Totals overview ---
+  put(0,9,"OVERALL TOTALS",{b:1,sz:12,c:"1F3864",nb:1});r++;
+  const G=[0,0,0];let nf=0,nhi=0,nmed=0,nlo=0;
+  reports.forEach(d=>{const t=sum(d);G[0]+=t[0];G[1]+=t[1];G[2]+=t[2];(d.find||[]).forEach(f=>{nf++;if(sev(f.lvl)===2)nhi++;else if(sev(f.lvl)===1)nmed++;else nlo++})});
+  [["Total equipment",G[0]],["Working",G[1]],["Faulty",G[2]],["Total findings",nf],["High severity",nhi],["Medium severity",nmed],["Low severity",nlo]].forEach(([k,v])=>{
+   put(0,1,k,{b:1,f:"D9E2F3"});put(2,2,num(v),{h:"center"});r++});
+  r++;
+
+  // --- One row per report ---
+  put(0,9,"REPORT LIST",{b:1,sz:12,c:"1F3864",nb:1});r++;
+  hdr([[0,0,"Date"],[1,1,"Report no."],[2,2,"Client / Site"],[3,3,"Technician"],[4,4,"Service type"],[5,5,"Total"],[6,6,"Working"],[7,7,"Faulty"],[8,8,"Findings (H/M/L)"],[9,9,"Top finding"]]);
+  reports.forEach(d=>{const t=sum(d),fs=d.find||[];
+   const h=fs.filter(f=>sev(f.lvl)===2).length,m=fs.filter(f=>sev(f.lvl)===1).length,l=fs.length-h-m;
+   put(0,0,d.date,{h:"center"});put(1,1,d.no);put(2,2,d.site);put(3,3,d.tech);put(4,4,d.stype);
+   put(5,5,t[0],{h:"center"});put(6,6,t[1],{h:"center"});put(7,7,t[2],{h:"center"});
+   put(8,8,`${h}/${m}/${l}`,{h:"center",b:1});
+   put(9,9,fs.length?("["+(fs[0].sys||"")+(fs[0].lvl?", "+fs[0].lvl:"")+"] "+fs[0].text):"-");
+   r++});
+  r++;
+
+  // --- Per-report detail ---
+  put(0,9,"DETAILED FINDINGS BY REPORT",{b:1,sz:12,c:"1F3864",nb:1});r++;
+  hdr([[0,0,"Date"],[1,1,"Report no."],[2,2,"Site"],[3,3,"System"],[4,4,"Severity"],[5,9,"Details"]]);
+  let any=false;
+  reports.forEach(d=>{const fs=d.find||[];if(!fs.length)return;any=true;
+   fs.forEach(f=>{put(0,0,d.date,{h:"center"});put(1,1,d.no);put(2,2,d.site);put(3,3,f.sys);
+    put(4,4,f.lvl,{h:"center",...(SEV[f.lvl]||{})});put(5,9,f.text);ht(lines(f.text,80));r++})});
+  if(!any){put(0,9,"No findings recorded.",{c:"7F7F7F",nb:1});r++}
+  r++;
+
+  // --- Remarks ---
+  put(0,9,"OVERALL REMARKS",{b:1,sz:12,c:"1F3864",nb:1});r++;
+  hdr([[0,0,"Date"],[1,1,"Report no."],[2,2,"Site"],[3,9,"Remarks"]]);
+  let anyR=false;
+  reports.forEach(d=>{if(!d.rem)return;anyR=true;put(0,0,d.date,{h:"center"});put(1,1,d.no);put(2,2,d.site);put(3,9,d.rem);ht(Math.max(2,lines(d.rem,90)));r++});
+  if(!anyR){put(0,9,"No remarks recorded.",{c:"7F7F7F",nb:1});r++}
+
+  const last=r;
+  let sd="";
+  for(let i=1;i<=last;i++){if(!cells[i]&&!rows[i])continue;
+   sd+=`<row r="${i}"${rows[i]?` ht="${rows[i]}" customHeight="1"`:""}>`;
+   Object.keys(cells[i]||{}).map(Number).sort((a,b)=>a-b).forEach(c=>{const x=cells[i][c],ref=col(c)+i;
+    sd+=typeof x.v==="number"?`<c r="${ref}" s="${x.s}"><v>${x.v}</v></c>`:`<c r="${ref}" s="${x.s}" t="inlineStr"><is><t xml:space="preserve">${X(x.v)}</t></is></c>`});
+   sd+="</row>"}
+  const NS='xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"',H='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
+  const sheet=H+`<worksheet ${NS}><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><dimension ref="A1:J${last}"/><sheetViews><sheetView showGridLines="0" workbookViewId="0"/></sheetViews><sheetFormatPr defaultRowHeight="15"/><cols>${W.map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join("")}</cols><sheetData>${sd}</sheetData><mergeCells count="${merges.length}">${merges.map(m=>`<mergeCell ref="${m}"/>`).join("")}</mergeCells><pageMargins left="0.4" right="0.4" top="0.5" bottom="0.5" header="0.3" footer="0.3"/><pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="0"/></worksheet>`;
+  const styles=H+`<styleSheet ${NS}><fonts count="${fonts.length}">${fonts.join("")}</fonts><fills count="${fills.length}">${fills.join("")}</fills><borders count="${borders.length}">${borders.join("")}</borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="${xfs.length+1}"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>${xfs.join("")}</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+  const R="http://schemas.openxmlformats.org/officeDocument/2006/relationships",P="http://schemas.openxmlformats.org/package/2006/relationships";
+  return zipStore([
+   ["[Content_Types].xml",H+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>'],
+   ["_rels/.rels",H+`<Relationships xmlns="${P}"><Relationship Id="rId1" Type="${R}/officeDocument" Target="xl/workbook.xml"/></Relationships>`],
+   ["xl/workbook.xml",H+`<workbook ${NS} xmlns:r="${R}"><sheets><sheet name="All Reports" sheetId="1" r:id="rId1"/></sheets></workbook>`],
+   ["xl/_rels/workbook.xml.rels",H+`<Relationships xmlns="${P}"><Relationship Id="rId1" Type="${R}/worksheets" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="${R}/styles" Target="styles.xml"/></Relationships>`],
+   ["xl/styles.xml",styles],["xl/worksheets/sheet1.xml",sheet]])}
 </script>
 <script>
 const SYS=["Computers","Network","CCTV","Intercom","Biometrics"];
@@ -1635,10 +1715,47 @@ function printReport(no){
  closeSide();
  const w=window.open("","_blank");
  if(!w){alert("Please allow popups to print.");return}
- const rows=(arr)=>arr&&arr.length?arr.map((x,i)=>(i+1)+". ["+x.sys+(x.lvl?", "+x.lvl:"")+"] "+x.text).join("<br>"):"None recorded.";
+  const rows=(arr)=>arr&&arr.length?arr.map((x,i)=>(i+1)+". ["+esc(x.sys)+(x.lvl?", "+esc(x.lvl):"")+"] "+esc(x.text)).join("<br>"):"None recorded.";
  const eq=d.eq.map(r=>`<tr><td>${esc(r.sys)}</td><td>${esc(r.total)}</td><td>${esc(r.ok)}</td><td>${esc(r.bad)}</td><td>${esc(r.work)}</td></tr>`).join("");
  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(d.no)}</title><style>body{font-family:Segoe UI,Arial,sans-serif;padding:24px;color:#111}h1{font-size:22px;margin:0}h2{font-size:15px;color:#0b4d6e;border-bottom:2px solid #0b4d6e;padding-bottom:4px}table{border-collapse:collapse;width:100%;margin:8px 0}th,td{border:1px solid #999;padding:6px;font-size:13px;text-align:left}th{background:#0b4d6e;color:#fff}.mu{color:#555;font-size:12px}.sig{display:flex;gap:40px;margin-top:30px;text-align:center}.sig div{flex:1;border-top:1px solid #000;padding-top:4px}</style></head><body><h1>IT Service Report</h1><div class="mu">Santa Clara Shipping Corp. · ${esc(d.no)} · ${esc(d.stype)}</div><h2>Visit details</h2><table><tr><th>Client / Site</th><td>${esc(d.site)}</td><th>Date</th><td>${esc(d.date)}</td></tr><tr><th>Address</th><td>${esc(d.addr)}</td><th>Site contact</th><td>${esc(d.contact)}</td></tr><tr><th>Technician</th><td>${esc(d.tech)}</td><th>Service type</th><td>${esc(d.stype)}</td></tr></table><h2>Equipment summary</h2><table><tr><th>System</th><th>Total</th><th>Working</th><th>Faulty</th><th>Work performed</th></tr>${eq}</table><h2>Findings</h2><p>${rows(d.find)}</p><h2>Overall remarks</h2><p>${esc(d.rem)||"None."}</p><div class="sig"><div>${esc(d.tech)}<br>Technician</div><div>${esc(d.client)}<br>Client representative</div></div><script>onload=()=>{print();}<\/script></body></html>`);
- w.document.close();
+  w.document.close();
+}
+/* ===== Print every report, one per page, with a summary cover ===== */
+function printAllReports(){
+  const reports=Object.values(store.all()).sort((a,b)=>(a.date||"").localeCompare(b.date||"")||(a.no||"").localeCompare(b.no||""));
+  if(!reports.length){alert("There are no reports to print.");return}
+  closeSide();
+  const w=window.open("","_blank");
+  if(!w){alert("Please allow popups to print.");return}
+  const rows=arr=>arr&&arr.length?arr.map((x,i)=>(i+1)+". ["+esc(x.sys)+(x.lvl?", "+esc(x.lvl):"")+"] "+esc(x.text)).join("<br>"):"None recorded.";
+  const sev=s=>({Low:0,Medium:1,High:2})[s]??-1;
+  const tot=d=>{const t=[0,0,0];(d.eq||[]).forEach(e=>{t[0]+=+e.total||0;t[1]+=+e.ok||0;t[2]+=+e.bad||0});return t};
+  // Summary cover
+  const G=[0,0,0];let nf=0,nh=0,nm=0,nl=0;
+  reports.forEach(d=>{const t=tot(d);G[0]+=t[0];G[1]+=t[1];G[2]+=t[2];(d.find||[]).forEach(f=>{nf++;const s=sev(f.lvl);if(s===2)nh++;else if(s===1)nm++;else nl++})});
+  const summary=`<div class="cover"><h1>IT Service Reports</h1><div class="mu">Santa Clara Shipping Corp. · ${reports.length} report(s) · generated ${esc(new Date().toLocaleString())}</div>
+  <h2>Overall totals</h2><table><tr><th>Total equipment</th><th>Working</th><th>Faulty</th><th>Findings</th><th>High</th><th>Medium</th><th>Low</th></tr><tr><td>${G[0]}</td><td>${G[1]}</td><td>${G[2]}</td><td>${nf}</td><td>${nh}</td><td>${nm}</td><td>${nl}</td></tr></table>
+  <h2>Report list</h2><table><tr><th>Date</th><th>Report no.</th><th>Site</th><th>Technician</th><th>Service type</th><th>Total</th><th>Working</th><th>Faulty</th><th>Findings</th></tr>
+  ${reports.map(d=>{const t=tot(d),c=(d.find||[]).length;return `<tr><td>${esc(d.date)}</td><td>${esc(d.no)}</td><td>${esc(d.site)}</td><td>${esc(d.tech)}</td><td>${esc(d.stype)}</td><td>${t[0]}</td><td>${t[1]}</td><td>${t[2]}</td><td>${c}</td></tr>`}).join("")}</table></div>`;
+  // One page per report
+  const pages=reports.map((d,i)=>{
+   const eq=(d.eq||[]).map(r=>`<tr><td>${esc(r.sys)}</td><td>${esc(r.total)}</td><td>${esc(r.ok)}</td><td>${esc(r.bad)}</td><td>${esc(r.work)}</td></tr>`).join("");
+   return `<div class="pg"><div class="mu">Report ${i+1} of ${reports.length}</div><h1>IT Service Report</h1><div class="mu">Santa Clara Shipping Corp. · ${esc(d.no)} · ${esc(d.stype)}</div>
+  <h2>Visit details</h2><table><tr><th>Client / Site</th><td>${esc(d.site)}</td><th>Date</th><td>${esc(d.date)}</td></tr><tr><th>Address</th><td>${esc(d.addr)}</td><th>Site contact</th><td>${esc(d.contact)}</td></tr><tr><th>Technician</th><td>${esc(d.tech)}</td><th>Service type</th><td>${esc(d.stype)}</td></tr></table>
+  <h2>Equipment summary</h2><table><tr><th>System</th><th>Total</th><th>Working</th><th>Faulty</th><th>Work performed</th></tr>${eq}</table>
+  <h2>Findings</h2><p>${rows(d.find)}</p><h2>Overall remarks</h2><p>${esc(d.rem)||"None."}</p>
+  <div class="sig"><div>${esc(d.tech)}<br>Technician</div><div>${esc(d.client)}<br>Client representative</div></div></div>`}).join("");
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>All IT Service Reports</title><style>
+  body{font-family:Segoe UI,Arial,sans-serif;color:#111;margin:0;padding:0}
+  h1{font-size:22px;margin:0}h2{font-size:15px;color:#0b4d6e;border-bottom:2px solid #0b4d6e;padding-bottom:4px;margin-top:20px}
+  table{border-collapse:collapse;width:100%;margin:8px 0}th,td{border:1px solid #999;padding:6px;font-size:12px;text-align:left}th{background:#0b4d6e;color:#fff}
+  .mu{color:#555;font-size:12px}
+  .sig{display:flex;gap:40px;margin-top:30px;text-align:center}.sig div{flex:1;border-top:1px solid #000;padding-top:4px}
+  .pg,.cover{padding:24px;page-break-after:always;break-after:page}.cover :last-child{page-break-after:auto;break-after:auto}
+  @page{size:A4;margin:14mm}
+  @media print{.pg,.cover{padding:0}}</style></head><body>${summary}${pages}</body></html>`);
+  w.document.close();
+  try{w.focus();w.onload=()=>w.print();}catch(e){}
 }
 function show(d,editNo){
   const t=qrText(d),bytes=u8(t).length,ok=bytes<=2800;
@@ -1708,13 +1825,25 @@ function showList(){
   ALL=Object.values(store.all()).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.no||"").localeCompare(a.no||""));
   $("listv").innerHTML=`<div class="card top"><div class="brand"><div class="logo-carousel"><div class="logo-track"><img src="logoo.png" alt="Santa Clara Shipping Corp. logo"><img src="penafrancia.png" alt="Penafrancia logo" onerror="this.onerror=null;this.src='logo.png'"></div><button type="button" class="logo-arrow prev" aria-label="Previous logo">&#10094;</button><button type="button" class="logo-arrow next" aria-label="Next logo">&#10095;</button></div><div class="logo-dots"><button type="button" class="on" aria-label="Logo 1"></button><button type="button" aria-label="Logo 2"></button></div><div class="brand-text"><h1>Saved reports</h1><small>Santa Clara Shipping Corp.</small></div></div><div class="mu">${ALL.length} report(s) on this device. Tap a row to open it.</div>
 <label>Search by site, technician, or report no.</label><input id="q" placeholder="Type to filter">
-<div class="act" style="margin-top:12px"><button class="p" id="newrep2">New report</button><button id="exportAll">Export all Excel</button><button id="printAll">Print all</button><button id="bk">Backup all (file)</button><button id="rs">Restore from backup</button><button id="clearAll" style="background:#fee;color:#c00;border-color:#fcc">Clear all</button><input id="rf" type="file" accept=".json,application/json" hidden></div>
+<div class="act" style="margin-top:12px"><button class="p" id="newrep2">New report</button><button id="exportAll">Export all Excel (summary)</button><button id="printAll">Print all reports</button><button id="bk">Backup all (file)</button><button id="rs">Restore from backup</button><button id="clearAll" style="background:#fee;color:#c00;border-color:#fcc">Clear all</button><input id="rf" type="file" accept=".json,application/json" hidden></div>
 <p class="mu" id="lmsg">Saved reports live in this browser. Clearing browser data deletes them, so make a backup now and then.</p></div>
 <div class="card"><div class="scroll"><table id="lt"></table></div></div>`;
   initCarousels();
   $("q").oninput=drawList;drawList();
 $("bk").onclick=()=>dlBlob("service-reports-backup.json","application/json",JSON.stringify(store.all()));
   $("rs").onclick=()=>$("rf").click();
+  $("exportAll").onclick=()=>{
+    if(!ALL.length){alert("There are no reports to export.");return}
+    $("lmsg").textContent="Building Excel summary of "+ALL.length+" report(s)...";
+    try{
+      dlBlob("it-service-reports-summary.xlsx","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",buildAllXlsx(ALL));
+      $("lmsg").textContent="Excel summary downloaded ("+ALL.length+" report(s)).";
+    }catch(x){console.error(x);$("lmsg").textContent="Excel export failed: "+x.message}
+  };
+  $("printAll").onclick=()=>{
+    if(!ALL.length){alert("There are no reports to print.");return}
+    printAllReports();
+  };
   if($("clearAll"))$("clearAll").onclick=()=>{if(confirm("Delete ALL reports? This cannot be undone.")){clearAllReports(); showList();}};
   if($("newrep2"))$("newrep2").onclick=()=>{clearForm();$("form").hidden=false;$("view").hidden=true;$("listv").hidden=true;scrollTo(0,0);};
  $("rf").onchange=e=>{const f=e.target.files[0];if(!f)return;
