@@ -172,8 +172,6 @@ button:active{transform:scale(.98)}
 <div><label>Technician</label><select id="tech"><option value="">Select technician</option><option>IT-Ed</option><option>IT-Jaren</option><option>IT-Mark</option><option>IT-Van</option></select></div><div><label>Service type</label><select id="stype"><option>Preventive Maintenance</option><option>Repair</option><option>Installation</option><option>Inspection</option></select></div></div></div>
 <div class="card"><h2>Equipment summary</h2><div class="scroll"><table id="eq"><tr><th>System</th><th>Total</th><th>Working</th><th>Faulty</th><th>Work performed</th></tr></table></div></div>
 <div class="card"><h2>Findings (issues indicated)</h2><div id="find"></div><button data-add="find">+ Add finding</button></div>
-<div class="card"><h2>Suggestions</h2><div id="sug"></div><button data-add="sug">+ Add suggestion</button></div>
-<div class="card"><h2>Recommendations</h2><div id="rec"></div><button data-add="rec">+ Add recommendation</button></div>
 <div class="card"><h2>Overall remarks</h2><textarea id="rem"></textarea>
 <div class="g2"><div><label>Client representative</label><input id="client"></div><div></div></div></div>
 <div class="act"><button class="p" id="submit">Submit and generate QR</button></div>
@@ -1438,8 +1436,8 @@ function buildXlsx(d){
   if(!items.length){put(0,4,"None recorded.",{c:"7F7F7F"});r++;return}
   hdr(lv?[[0,0,"System"],[1,3,"Details"],[4,4,lv]]:[[0,0,"System"],[1,4,"Details"]]);
   items.forEach((x,i)=>{put(0,0,x.sys,LB);if(lv){put(1,3,(i+1)+". "+x.text);put(4,4,x.lvl,{h:"center"});ht(lines(x.text,40))}else{put(1,4,(i+1)+". "+x.text);ht(lines(x.text,70))}r++})};
- listing("2. Findings (Issues Indicated)",d.find,"Severity");listing("3. Suggestions",d.sug);listing("4. Recommendations",d.rec,"Priority");
- sec("5. Overall Remarks");put(0,4,d.rem||"-");ht(Math.max(3,lines(d.rem,85)));r+=3;
+  listing("2. Findings (Issues Indicated)",d.find||[],"Severity");
+  sec("3. Overall Remarks");put(0,4,d.rem||"-");ht(Math.max(3,lines(d.rem,85)));r+=3;
  put(0,1,d.tech,{sig:1});put(3,4,d.client,{sig:1});ht(1);r++;
  put(0,1,"Technician",{nb:1,c:"595959"});put(3,4,"Client representative",{nb:1,c:"595959"});
  const last=r;
@@ -1468,7 +1466,7 @@ const opts=a=>a.map(x=>`<option>${x}</option>`).join("");
 let db=null;
 SYS.forEach(s=>{$("eq").insertAdjacentHTML("beforeend",`<tr><td><b>${s}</b></td><td><input type="number" min="0"></td><td><input type="number" min="0"></td><td><input type="number" min="0"></td><td><input></td></tr>`)});
 $("date").valueAsDate=new Date();
-const kinds={find:["Severity",["Low","Medium","High"]],sug:null,rec:["Priority",["Low","Medium","High","Urgent"]]};
+const kinds={find:["Severity",["Low","Medium","High"]]};
 function addRow(k){
  const k2=kinds[k],d=document.createElement("div");
  d.className="row"+(k2?"":" s");
@@ -1477,11 +1475,11 @@ function addRow(k){
  $(k).appendChild(d);
 }
 document.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>addRow(b.dataset.add));
-["find","sug","rec"].forEach(addRow);
+["find"].forEach(addRow);
 function list(k){return [...$(k).children].map(r=>{const e=r.querySelectorAll("select,input");return{sys:e[0].value,text:e[1].value.trim(),lvl:e[2]&&e[2].tagName=="SELECT"?e[2].value:""}}).filter(x=>x.text)}
 function collect(no){
  const rows=[...$("eq").querySelectorAll("tr")].slice(1).map((r,i)=>{const v=[...r.querySelectorAll("input")].map(x=>x.value);return{sys:SYS[i],total:v[0],ok:v[1],bad:v[2],work:v[3]}});
- return{no:no||("SR-"+Date.now().toString(36).toUpperCase()),site:$("site").value,date:$("date").value,addr:$("addr").value,contact:$("contact").value,tech:$("tech").value,stype:$("stype").value,eq:rows,find:list("find"),sug:list("sug"),rec:list("rec"),rem:$("rem").value,client:$("client").value};
+  return{no:no||("SR-"+Date.now().toString(36).toUpperCase()),site:$("site").value,date:$("date").value,addr:$("addr").value,contact:$("contact").value,tech:$("tech").value,stype:$("stype").value,eq:rows,find:list("find"),rem:$("rem").value,client:$("client").value};
 }
 function sect(t,items,lvl){
  if(!items.length)return`<h2>${t}</h2><p class="mu">None recorded.</p>`;
@@ -1492,10 +1490,8 @@ function render(d,qrOn,editNo){
  $("view").innerHTML=`<div class="card top"><div class="brand"><div class="logo-carousel"><div class="logo-track"><img src="logoo.png" alt="Santa Clara Shipping Corp. logo"><img src="penafrancia.png" alt="Penafrancia logo" onerror="this.onerror=null;this.src='logo.png'"></div><button type="button" class="logo-arrow prev" aria-label="Previous logo">&#10094;</button><button type="button" class="logo-arrow next" aria-label="Next logo">&#10095;</button></div><div class="logo-dots"><button type="button" class="on" aria-label="Logo 1"></button><button type="button" aria-label="Logo 2"></button></div><div class="brand-text"><h1>IT Service Report</h1><small>Santa Clara Shipping Corp.</small></div></div><div class="mu">${esc(d.no)} · ${esc(d.stype)}${editNo?" · Editing":""}</div>
  <div class="g2"><div><label>Client / Site</label>${esc(d.site)}</div><div><label>Date</label>${esc(d.date)}</div><div><label>Address</label>${esc(d.addr)}</div><div><label>Site contact</label>${esc(d.contact)}</div><div><label>Technician</label>${esc(d.tech)}</div></div></div>
  <div class="card"><h2>Equipment summary</h2><div class="scroll"><table><tr><th>System</th><th>Total</th><th>Working</th><th>Faulty</th><th>Work performed</th></tr>${d.eq.map(r=>`<tr><td>${r.sys}</td><td>${esc(r.total)}</td><td>${esc(r.ok)}</td><td>${esc(r.bad)}</td><td>${esc(r.work)}</td></tr>`).join("")}</table></div></div>
- <div class="card">${sect("Findings (issues indicated)",d.find,"Severity")}</div>
- <div class="card">${sect("Suggestions",d.sug)}</div>
- <div class="card">${sect("Recommendations",d.rec,"Priority")}</div>
- <div class="card"><h2>Overall remarks</h2><p>${esc(d.rem)||'<span class="mu">None.</span>'}</p>
+  <div class="card">${sect("Findings (issues indicated)",d.find||[],"Severity")}</div>
+  <div class="card"><h2>Overall remarks</h2><p>${esc(d.rem)||'<span class="mu">None.</span>'}</p>
  <div class="sig"><div>${esc(d.tech)||"&nbsp;"}<br>Technician</div><div>${esc(d.client)||"&nbsp;"}<br>Client representative</div></div></div>
  ${qrOn?`<div class="card qr"><h2>Scan to read this report</h2><canvas id="qrc"></canvas><div class="mu">Scanning shows the report as text on any phone. <span id="qrn"></span></div><button class="noprint" id="dlqr">Download QR image</button></div>`:""}
  <div class="act noprint"><button class="p" onclick="print()">Print / save PDF</button><button id="xl">Download Excel</button>${editNo?`<button id="edback">Back to edit</button>`:""}<button onclick="showList()">Saved reports</button><button id="newrep">New report</button></div>`;
@@ -1505,7 +1501,7 @@ const u8=t=>unescape(encodeURIComponent(t));
 function qrText(d){
  const L=["IT SERVICE REPORT "+d.no,d.stype+" | "+d.date,"Site: "+d.site+(d.addr?", "+d.addr:""),"Contact: "+d.contact,"Technician: "+d.tech,"","EQUIPMENT"];
  d.eq.forEach(r=>{if(r.total||r.ok||r.bad||r.work)L.push(r.sys+": total "+(r.total||0)+", working "+(r.ok||0)+", faulty "+(r.bad||0)+(r.work?" - "+r.work:""))});
- [["FINDINGS",d.find],["SUGGESTIONS",d.sug],["RECOMMENDATIONS",d.rec]].forEach(([t,a])=>{if(a.length){L.push("",t);a.forEach((x,i)=>L.push((i+1)+". ["+x.sys+(x.lvl?", "+x.lvl:"")+"] "+x.text))}});
+  if((d.find||[]).length){L.push("","FINDINGS");(d.find).forEach((x,i)=>L.push((i+1)+". ["+x.sys+(x.lvl?", "+x.lvl:"")+"] "+x.text))}
  if(d.rem)L.push("","REMARKS: "+d.rem);
  if(d.client)L.push("","Client rep: "+d.client);
  return L.join("\n");
@@ -1637,7 +1633,7 @@ function printReport(no){
  if(!w){alert("Please allow popups to print.");return}
  const rows=(arr)=>arr&&arr.length?arr.map((x,i)=>(i+1)+". ["+x.sys+(x.lvl?", "+x.lvl:"")+"] "+x.text).join("<br>"):"None recorded.";
  const eq=d.eq.map(r=>`<tr><td>${esc(r.sys)}</td><td>${esc(r.total)}</td><td>${esc(r.ok)}</td><td>${esc(r.bad)}</td><td>${esc(r.work)}</td></tr>`).join("");
- w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(d.no)}</title><style>body{font-family:Segoe UI,Arial,sans-serif;padding:24px;color:#111}h1{font-size:22px;margin:0}h2{font-size:15px;color:#0b4d6e;border-bottom:2px solid #0b4d6e;padding-bottom:4px}table{border-collapse:collapse;width:100%;margin:8px 0}th,td{border:1px solid #999;padding:6px;font-size:13px;text-align:left}th{background:#0b4d6e;color:#fff}.mu{color:#555;font-size:12px}.sig{display:flex;gap:40px;margin-top:30px;text-align:center}.sig div{flex:1;border-top:1px solid #000;padding-top:4px}</style></head><body><h1>IT Service Report</h1><div class="mu">Santa Clara Shipping Corp. · ${esc(d.no)} · ${esc(d.stype)}</div><h2>Visit details</h2><table><tr><th>Client / Site</th><td>${esc(d.site)}</td><th>Date</th><td>${esc(d.date)}</td></tr><tr><th>Address</th><td>${esc(d.addr)}</td><th>Site contact</th><td>${esc(d.contact)}</td></tr><tr><th>Technician</th><td>${esc(d.tech)}</td><th>Service type</th><td>${esc(d.stype)}</td></tr></table><h2>Equipment summary</h2><table><tr><th>System</th><th>Total</th><th>Working</th><th>Faulty</th><th>Work performed</th></tr>${eq}</table><h2>Findings</h2><p>${rows(d.find)}</p><h2>Suggestions</h2><p>${rows(d.sug)}</p><h2>Recommendations</h2><p>${rows(d.rec)}</p><h2>Overall remarks</h2><p>${esc(d.rem)||"None."}</p><div class="sig"><div>${esc(d.tech)}<br>Technician</div><div>${esc(d.client)}<br>Client representative</div></div><script>onload=()=>{print();}<\/script></body></html>`);
+ w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(d.no)}</title><style>body{font-family:Segoe UI,Arial,sans-serif;padding:24px;color:#111}h1{font-size:22px;margin:0}h2{font-size:15px;color:#0b4d6e;border-bottom:2px solid #0b4d6e;padding-bottom:4px}table{border-collapse:collapse;width:100%;margin:8px 0}th,td{border:1px solid #999;padding:6px;font-size:13px;text-align:left}th{background:#0b4d6e;color:#fff}.mu{color:#555;font-size:12px}.sig{display:flex;gap:40px;margin-top:30px;text-align:center}.sig div{flex:1;border-top:1px solid #000;padding-top:4px}</style></head><body><h1>IT Service Report</h1><div class="mu">Santa Clara Shipping Corp. · ${esc(d.no)} · ${esc(d.stype)}</div><h2>Visit details</h2><table><tr><th>Client / Site</th><td>${esc(d.site)}</td><th>Date</th><td>${esc(d.date)}</td></tr><tr><th>Address</th><td>${esc(d.addr)}</td><th>Site contact</th><td>${esc(d.contact)}</td></tr><tr><th>Technician</th><td>${esc(d.tech)}</td><th>Service type</th><td>${esc(d.stype)}</td></tr></table><h2>Equipment summary</h2><table><tr><th>System</th><th>Total</th><th>Working</th><th>Faulty</th><th>Work performed</th></tr>${eq}</table><h2>Findings</h2><p>${rows(d.find)}</p><h2>Overall remarks</h2><p>${esc(d.rem)||"None."}</p><div class="sig"><div>${esc(d.tech)}<br>Technician</div><div>${esc(d.client)}<br>Client representative</div></div><script>onload=()=>{print();}<\/script></body></html>`);
  w.document.close();
 }
 function show(d,editNo){
@@ -1745,7 +1741,7 @@ function clearForm(){
  ["site","addr","contact","rem","client"].forEach(id=>{$(id).value=""});
  $("date").valueAsDate=new Date(); $("tech").value=""; $("stype").selectedIndex=0;
  [...$("eq").querySelectorAll("tr")].slice(1).forEach(r=>[...r.querySelectorAll("input")].forEach(i=>i.value=""));
- ["find","sug","rec"].forEach(k=>{$(k).innerHTML="";addRow(k)});
+  ["find"].forEach(k=>{$(k).innerHTML="";addRow(k)});
  EDIT_NO=null; $("submit").textContent="Submit and generate QR"; $("msg").textContent="";
 }
 function fillForm(d){
@@ -1757,7 +1753,7 @@ function fillForm(d){
  const fill=(k,items)=>{$(k).innerHTML="";if(!items||!items.length){addRow(k);return}
   items.forEach(x=>{addRow(k);const r=$(k).lastElementChild;const e=r.querySelectorAll("select,input");
    e[0].value=x.sys||"General";e[1].value=x.text||"";if(e[2]&&e[2].tagName==="SELECT")e[2].value=x.lvl||e[2].options[0].value;});};
- fill("find",d.find);fill("sug",d.sug);fill("rec",d.rec);
+  fill("find",d.find);
  $("rem").value=d.rem||"";$("client").value=d.client||"";
  $("submit").textContent="Update report "+d.no;
 }
