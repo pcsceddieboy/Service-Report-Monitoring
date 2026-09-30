@@ -41,6 +41,16 @@ td input{padding:8px;min-height:40px;font-size:16px}
 tr:nth-child(even) td{background:rgba(11,77,110,.04)}
 .row{display:grid;grid-template-columns:120px 1fr 100px 40px;gap:8px;margin-bottom:8px;align-items:center}
 .row.s{grid-template-columns:120px 1fr 40px}
+/* ===== Severity / priority colours ===== */
+select.lvl{font-weight:600;transition:background .15s,color .15s}
+select.lvl-low{background:#e6f4ea;color:#1e7b34;border-color:#8fd6a6}
+select.lvl-medium{background:#fff6d9;color:#8a6100;border-color:#f0d17a}
+select.lvl-high{background:#fde8e8;color:#b3261e;border-color:#f2b0ad}
+/* ===== Severity tag in report table ===== */
+.tag{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid transparent;white-space:nowrap}
+.tag-low{background:#e6f4ea;color:#1e7b34;border-color:#8fd6a6}
+.tag-medium{background:#fff6d9;color:#8a6100;border-color:#f0d17a}
+.tag-high{background:#fde8e8;color:#b3261e;border-color:#f2b0ad}
 button{font:inherit;font-size:15px;font-weight:600;cursor:pointer;border-radius:10px;border:1px solid var(--ac);background:rgba(255,255,255,.7);color:var(--ac);padding:10px 14px;min-height:44px;touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:transform .08s,box-shadow .15s,background .15s}
 button:hover{box-shadow:0 4px 14px rgba(11,77,110,.18)}
 button.p{background:linear-gradient(135deg,var(--ac),var(--ac2));border:none;color:#fff;box-shadow:0 6px 16px rgba(11,77,110,.28)}
@@ -1458,12 +1468,15 @@ let db=null;
 SYS.forEach(s=>{$("eq").insertAdjacentHTML("beforeend",`<tr><td><b>${s}</b></td><td><input type="number" min="0"></td><td><input type="number" min="0"></td><td><input type="number" min="0"></td><td><input></td></tr>`)});
 $("date").valueAsDate=new Date();
 const kinds={find:["Severity",["Low","Medium","High"]]};
+function paintLvl(sel){if(!sel)return;const v=(sel.value||"").toLowerCase();sel.classList.remove("lvl-low","lvl-medium","lvl-high");if(v)sel.classList.add("lvl-"+v);}
 function addRow(k){
- const k2=kinds[k],d=document.createElement("div");
- d.className="row"+(k2?"":" s");
- d.innerHTML=`<select>${opts(["General",...SYS])}</select><input placeholder="Details">${k2?`<select>${opts(k2[1])}</select>`:""}<button class="x">×</button>`;
- d.querySelector(".x").onclick=()=>d.remove();
- $(k).appendChild(d);
+  const k2=kinds[k],d=document.createElement("div");
+  d.className="row"+(k2?"":" s");
+  d.innerHTML=`<select>${opts(["General",...SYS])}</select><input placeholder="Details">${k2?`<select class="lvl">${opts(k2[1])}</select>`:""}<button class="x">×</button>`;
+  d.querySelector(".x").onclick=()=>d.remove();
+  const lv=d.querySelector("select.lvl");
+  if(lv){paintLvl(lv);lv.onchange=()=>paintLvl(lv);}
+  $(k).appendChild(d);
 }
 document.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>addRow(b.dataset.add));
 ["find"].forEach(addRow);
@@ -1474,7 +1487,7 @@ function collect(no){
 }
 function sect(t,items,lvl){
  if(!items.length)return`<h2>${t}</h2><p class="mu">None recorded.</p>`;
- return`<h2>${t}</h2><div class="scroll"><table><tr><th>#</th><th>System</th><th>Details</th>${lvl?`<th>${lvl}</th>`:""}</tr>${items.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.sys)}</td><td>${esc(x.text)}</td>${lvl?`<td>${esc(x.lvl)}</td>`:""}</tr>`).join("")}</table></div>`;
+  return`<h2>${t}</h2><div class="scroll"><table><tr><th>#</th><th>System</th><th>Details</th>${lvl?`<th>${lvl}</th>`:""}</tr>${items.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.sys)}</td><td>${esc(x.text)}</td>${lvl?`<td><span class="tag tag-${esc((x.lvl||"").toLowerCase())}">${esc(x.lvl)}</span></td>`:""}</tr>`).join("")}</table></div>`;
 }
 function render(d,qrOn,editNo){
  $("form").hidden=true;$("listv").hidden=true;$("view").hidden=false;
@@ -1741,9 +1754,9 @@ function fillForm(d){
  $("contact").value=d.contact||"";$("tech").value=d.tech||"";$("stype").value=d.stype||"Preventive Maintenance";
  [...$("eq").querySelectorAll("tr")].slice(1).forEach((r,i)=>{const e=d.eq&&d.eq[i];const ins=[...r.querySelectorAll("input")];
   if(e){ins[0].value=e.total||"";ins[1].value=e.ok||"";ins[2].value=e.bad||"";ins[3].value=e.work||""}else ins.forEach(x=>x.value="")});
- const fill=(k,items)=>{$(k).innerHTML="";if(!items||!items.length){addRow(k);return}
-  items.forEach(x=>{addRow(k);const r=$(k).lastElementChild;const e=r.querySelectorAll("select,input");
-   e[0].value=x.sys||"General";e[1].value=x.text||"";if(e[2]&&e[2].tagName==="SELECT")e[2].value=x.lvl||e[2].options[0].value;});};
+  const fill=(k,items)=>{$(k).innerHTML="";if(!items||!items.length){addRow(k);return}
+   items.forEach(x=>{addRow(k);const r=$(k).lastElementChild;const e=r.querySelectorAll("select,input");
+    e[0].value=x.sys||"General";e[1].value=x.text||"";if(e[2]&&e[2].tagName==="SELECT"){e[2].value=x.lvl||e[2].options[0].value;paintLvl(e[2]);}});};
   fill("find",d.find);
  $("rem").value=d.rem||"";$("client").value=d.client||"";
  $("submit").textContent="Update report "+d.no;
