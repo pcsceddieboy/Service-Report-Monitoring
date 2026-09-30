@@ -82,7 +82,7 @@ button:active{transform:scale(.98)}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:99;padding:16px}
 .modal[hidden]{display:none!important}
 .modal .card{max-width:400px;width:100%;margin:0}
-@media print{.topbar,#login,#pwmodal,#sidepanel,#sidebackdrop{display:none!important}}
+@media print{.topbar,#login,#sidepanel,#sidebackdrop{display:none!important}}
 /* ===== Side panel dropdown (CRUD list) ===== */
 #menubtn{font-size:18px;padding:6px 12px;min-height:40px;line-height:1}
 #sidebackdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:98;opacity:0;pointer-events:none;transition:opacity .25s}
@@ -155,7 +155,7 @@ button:active{transform:scale(.98)}
 <div style="text-align:left"><label>Password</label><div class="pwrow"><input id="lg_p" type="password" autocomplete="current-password" placeholder="Enter password"><button type="button" id="lg_show" title="Show password">Show</button></div></div>
 <div class="err" id="lg_err"></div>
 <button class="p" id="lg_go" style="width:100%">Login</button>
-<p class="mu" style="margin:10px 0 0">Default: <b>admin</b> / <b>admin123</b> — change it after login in Settings.</p>
+<p class="mu" style="margin:10px 0 0">Default: <b>admin</b> / <b>admin123</b></p>
 </div>
 </div>
 <div id="app" hidden>
@@ -182,15 +182,6 @@ button:active{transform:scale(.98)}
 </div>
 <div id="view" hidden></div>
 <div id="listv" hidden></div>
-</div>
-<div id="pwmodal" class="modal noprint" hidden>
-<div class="card"><h2>Change password</h2>
-<label>Current password</label><input id="pw_cur" type="password" autocomplete="current-password">
-<label>New username (leave blank to keep current)</label><input id="pw_user" autocomplete="username">
-<label>New password (min 4 characters)</label><input id="pw_new" type="password" autocomplete="new-password">
-<div class="err" id="pw_err"></div>
-<div class="act"><button type="button" class="p" id="pw_save">Save</button><button type="button" id="pw_cancel">Cancel</button></div>
-</div>
 </div>
 </main>
 <script>
@@ -1788,8 +1779,8 @@ function initAuth(){
 const AUTH_KEY='sr_auth_v1', SESSION_KEY='sr_session_v1';
 function getAuth(){try{const a=JSON.parse(localStorage.getItem(AUTH_KEY));if(a&&a.u&&a.p)return a;}catch(e){}return{u:'admin',p:'admin123'};}
 function setAuth(u,p){localStorage.setItem(AUTH_KEY,JSON.stringify({u,p}));}
-function enterApp(u){$('login').hidden=true;$('app').hidden=false;$('who').textContent=u;try{sessionStorage.setItem(SESSION_KEY,'1');}catch(e){}refreshSide(EDIT_NO); initCarousels();}
-function exitApp(){try{sessionStorage.removeItem(SESSION_KEY);}catch(e){}$('app').hidden=true;$('login').hidden=false;$('lg_p').value='';$('lg_err').textContent='';$('lg_u').focus();}
+function enterApp(u){$('login').hidden=true;$('app').hidden=false;$('who').textContent=u;try{sessionStorage.setItem(SESSION_KEY,'1');localStorage.setItem(SESSION_KEY,'1');}catch(e){}refreshSide(EDIT_NO); initCarousels();}
+function exitApp(){try{sessionStorage.removeItem(SESSION_KEY);localStorage.removeItem(SESSION_KEY);}catch(e){}$('app').hidden=true;$('login').hidden=false;$('lg_p').value='';$('lg_err').textContent='';$('lg_u').focus();}
 function tryLogin(){
   const u=$('lg_u').value.trim(), p=$('lg_p').value, a=getAuth();
   if(u===a.u&&p===a.p){$('lg_err').textContent='';enterApp(u);}
@@ -1800,26 +1791,8 @@ $('lg_p').onkeydown=e=>{if(e.key==='Enter')tryLogin();};
 $('lg_u').onkeydown=e=>{if(e.key==='Enter')tryLogin();};
 $('lg_show').onclick=()=>{const i=$('lg_p'),s=$('lg_show');if(i.type==='password'){i.type='text';s.textContent='Hide';}else{i.type='password';s.textContent='Show';}};
 $('logout').onclick=function(){exitApp();};
-$('pwbtn').onclick=function(){
-  const a=getAuth();
-  $('pw_user').value=a.u;$('pw_cur').value='';$('pw_new').value='';$('pw_err').textContent='';
-  $('pwmodal').hidden=false;$('pw_cur').focus();
-};
-$('pw_cancel').onclick=function(e){if(e)e.preventDefault();$('pwmodal').hidden=true;return false;};
-$('pwmodal').onclick=function(e){if(e.target===$('pwmodal')){$('pwmodal').hidden=true;}};
-document.onkeydown=function(e){if(e.key==='Escape'&&!$('pwmodal').hidden){$('pwmodal').hidden=true;}};
-$('pw_save').onclick=function(){
-  const a=getAuth();
-  const cur=$('pw_cur').value;
-  if(cur!==a.p){$('pw_err').textContent='Current password is wrong.';return;}
-  const nu=($('pw_user').value||'').trim()||a.u;
-  const np=$('pw_new').value||'';
-  if(np.length<4){$('pw_err').textContent='New password must be at least 4 characters.';return;}
-  setAuth(nu,np);$('who').textContent=nu;$('pwmodal').hidden=true;
-  alert('Login updated. Username: '+nu);
-};
 // auto-login if session active, else show login
-let sess='0';try{sess=sessionStorage.getItem(SESSION_KEY);}catch(e){}
+let sess=sessionStorage.getItem(SESSION_KEY)||localStorage.getItem(SESSION_KEY);
 if(sess==='1'){enterApp(getAuth().u);}else{$('login').hidden=false;$('app').hidden=true;}
 }
 initAuth();
