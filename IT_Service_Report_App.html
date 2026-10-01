@@ -1726,6 +1726,7 @@ function zipStore(files){
  const end=new Uint8Array([0x50,0x4b,5,6,0,0,0,0,...u16(files.length),...u16(files.length),...u32(cs),...u32(off),0,0]);
  const parts=[...out,...cen,end],tot=parts.reduce((a,x)=>a+x.length,0),res=new Uint8Array(tot);let p=0;
  parts.forEach(x=>{res.set(x,p);p+=x.length});return res}
+function fmtUploaded(ts){ if(!ts) return "—"; try{ const d=new Date(ts); if(isNaN(d)) return "—"; const p=n=>String(n).padStart(2,"0"); return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes()); }catch(e){ return "—"; } }
 function buildXlsx(d){
  const X=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,"");
  const fonts=[],fills=['<fill><patternFill patternType="none"/></fill>','<fill><patternFill patternType="gray125"/></fill>'],borders=['<border><left/><right/><top/><bottom/><diagonal/></border>'],xfs=[],xc={};
@@ -1747,7 +1748,7 @@ function buildXlsx(d){
  const LB={b:1,f:"D9E2F3"};
  put(0,4,"IT SERVICE REPORT",{b:1,sz:16,c:"1F3864",nb:1,h:"center",v:"center"});rows[r]=30;r++;
  put(0,4,d.no+"  |  "+d.stype,{c:"595959",nb:1,h:"center"});r+=2;
- [["Client / Site",d.site,"Date",d.date],["Address",d.addr,"Site contact",d.contact],["Technician",d.tech,"Service type",d.stype]].forEach(x=>{
+ [["Client / Site",d.site,"Date",d.date],["Address",d.addr,"Site contact",d.contact],["Technician",d.tech,"Service type",d.stype],["Uploaded",fmtUploaded(d.uploadedAt),"",""]].forEach(x=>{
   put(0,0,x[0],LB);put(1,2,x[1]);put(3,3,x[2],LB);put(4,4,x[3]);ht(Math.max(lines(x[1],26),lines(x[3],30)));r++});
  sec("1. Equipment Summary");
  hdr([[0,0,"System"],[1,1,"Total"],[2,2,"Working"],[3,3,"Faulty"],[4,4,"Work performed"]]);
@@ -1779,9 +1780,11 @@ function buildXlsx(d){
   ["xl/workbook.xml",H+`<workbook ${NS} xmlns:r="${R}"><sheets><sheet name="Service Report" sheetId="1" r:id="rId1"/></sheets></workbook>`],
   ["xl/_rels/workbook.xml.rels",H+`<Relationships xmlns="${P}"><Relationship Id="rId1" Type="${R}/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="${R}/styles" Target="styles.xml"/></Relationships>`],
    ["xl/styles.xml",styles],["xl/worksheets/sheet1.xml",sheet]])}
+function sortByUploadedDesc(list){ return [...list].sort((a,b)=>((b.uploadedAt||0)-(a.uploadedAt||0))||String(b.no||"").localeCompare(String(a.no||""))||String(b.date||"").localeCompare(String(a.date||""))); }
+function sortByUploadedAsc(list){ return [...list].sort((a,b)=>((a.uploadedAt||0)-(b.uploadedAt||0))||String(a.no||"").localeCompare(String(b.no||""))||String(a.date||"").localeCompare(String(b.date||""))); }
 /* ===== All-reports summary workbook ===== */
 function buildAllXlsx(list){
-  const reports=[...list].sort((a,b)=>(a.date||"").localeCompare(b.date||""));
+  const reports=sortByUploadedAsc(list);
   const X=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,"");
   const fonts=[],fills=['<fill><patternFill patternType="none"/></fill>','<fill><patternFill patternType="gray125"/></fill>'],borders=['<border><left/><right/><top/><bottom/><diagonal/></border>'],xfs=[],xc={};
   const ix=(a,s)=>{let i=a.indexOf(s);if(i<0){a.push(s);i=a.length-1}return i};
@@ -1815,10 +1818,10 @@ function buildAllXlsx(list){
 
   // --- One row per report ---
   put(0,9,"REPORT LIST",{b:1,sz:12,c:"1F3864",nb:1});r++;
-  hdr([[0,0,"Date"],[1,1,"Report no."],[2,2,"Client / Site"],[3,3,"Technician"],[4,4,"Service type"],[5,5,"Total"],[6,6,"Working"],[7,7,"Faulty"],[8,8,"Findings (H/M/L)"],[9,9,"Top finding"]]);
+  hdr([[0,0,"Uploaded"],[1,1,"Report no."],[2,2,"Client / Site"],[3,3,"Technician"],[4,4,"Service type"],[5,5,"Total"],[6,6,"Working"],[7,7,"Faulty"],[8,8,"Findings (H/M/L)"],[9,9,"Top finding"]]);
   reports.forEach(d=>{const t=sum(d),fs=d.find||[];
    const h=fs.filter(f=>sev(f.lvl)===2).length,m=fs.filter(f=>sev(f.lvl)===1).length,l=fs.length-h-m;
-   put(0,0,d.date,{h:"center"});put(1,1,d.no);put(2,2,d.site);put(3,3,d.tech);put(4,4,d.stype);
+   put(0,0,fmtUploaded(d.uploadedAt)||d.date,{h:"center"});put(1,1,d.no);put(2,2,d.site);put(3,3,d.tech);put(4,4,d.stype);
    put(5,5,t[0],{h:"center"});put(6,6,t[1],{h:"center"});put(7,7,t[2],{h:"center"});
    put(8,8,`${h}/${m}/${l}`,{h:"center",b:1});
    put(9,9,fs.length?("["+(fs[0].sys||"")+(fs[0].lvl?", "+fs[0].lvl:"")+"] "+fs[0].text):"-");
@@ -1827,19 +1830,19 @@ function buildAllXlsx(list){
 
   // --- Per-report detail ---
   put(0,9,"DETAILED FINDINGS BY REPORT",{b:1,sz:12,c:"1F3864",nb:1});r++;
-  hdr([[0,0,"Date"],[1,1,"Report no."],[2,2,"Site"],[3,3,"System"],[4,4,"Severity"],[5,9,"Details"]]);
+  hdr([[0,0,"Uploaded"],[1,1,"Report no."],[2,2,"Site"],[3,3,"System"],[4,4,"Severity"],[5,9,"Details"]]);
   let any=false;
   reports.forEach(d=>{const fs=d.find||[];if(!fs.length)return;any=true;
-   fs.forEach(f=>{put(0,0,d.date,{h:"center"});put(1,1,d.no);put(2,2,d.site);put(3,3,f.sys);
+   fs.forEach(f=>{put(0,0,fmtUploaded(d.uploadedAt)||d.date,{h:"center"});put(1,1,d.no);put(2,2,d.site);put(3,3,f.sys);
     put(4,4,f.lvl,{h:"center",...(SEV[f.lvl]||{})});put(5,9,f.text);ht(lines(f.text,80));r++})});
   if(!any){put(0,9,"No findings recorded.",{c:"7F7F7F",nb:1});r++}
   r++;
 
   // --- Remarks ---
   put(0,9,"OVERALL REMARKS",{b:1,sz:12,c:"1F3864",nb:1});r++;
-  hdr([[0,0,"Date"],[1,1,"Report no."],[2,2,"Site"],[3,9,"Remarks"]]);
+  hdr([[0,0,"Uploaded"],[1,1,"Report no."],[2,2,"Site"],[3,9,"Remarks"]]);
   let anyR=false;
-  reports.forEach(d=>{if(!d.rem)return;anyR=true;put(0,0,d.date,{h:"center"});put(1,1,d.no);put(2,2,d.site);put(3,9,d.rem);ht(Math.max(2,lines(d.rem,90)));r++});
+  reports.forEach(d=>{if(!d.rem)return;anyR=true;put(0,0,fmtUploaded(d.uploadedAt)||d.date,{h:"center"});put(1,1,d.no);put(2,2,d.site);put(3,9,d.rem);ht(Math.max(2,lines(d.rem,90)));r++});
   if(!anyR){put(0,9,"No remarks recorded.",{c:"7F7F7F",nb:1});r++}
 
   const last=r;
@@ -1887,9 +1890,11 @@ function addRow(k){
 document.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>addRow(b.dataset.add));
 ["find"].forEach(addRow);
 function list(k){return [...$(k).children].map(r=>{const e=r.querySelectorAll("select,input");return{sys:e[0].value,text:e[1].value.trim(),lvl:e[2]&&e[2].tagName=="SELECT"?e[2].value:""}}).filter(x=>x.text)}
-function collect(no){
+function collect(no,prev){
  const rows=[...$("eq").querySelectorAll("tr")].slice(1).map((r,i)=>{const v=[...r.querySelectorAll("input")].map(x=>x.value);return{sys:SYS[i],total:v[0],ok:v[1],bad:v[2],work:v[3]}});
-  return{no:no||("SR-"+Date.now().toString(36).toUpperCase()),site:$("site").value,date:$("date").value,addr:$("addr").value,contact:$("contact").value,tech:$("tech").value,stype:$("stype").value,eq:rows,find:list("find"),rem:$("rem").value,client:$("client").value};
+  const now=Date.now();
+  const stamp=no?(prev&&prev.uploadedAt)||now:now;
+  return{no:no||("SR-"+now.toString(36).toUpperCase()),site:$("site").value,date:$("date").value,addr:$("addr").value,contact:$("contact").value,tech:$("tech").value,stype:$("stype").value,eq:rows,find:list("find"),rem:$("rem").value,client:$("client").value,uploadedAt:stamp};
 }
 function sect(t,items,lvl){
  if(!items.length)return`<h2>${t}</h2><p class="mu">None recorded.</p>`;
@@ -1902,7 +1907,7 @@ function render(d,qrOn,editNo){
   <div class="card"><h2>Visit details</h2>
   <div class="g2"><div><span class="eyebrow">Client / Site</span>${esc(d.site)}</div><div><span class="eyebrow">Date</span>${esc(d.date)}</div>
   <div><span class="eyebrow">Address</span>${esc(d.addr)||'<span class="mu">&mdash;</span>'}</div><div><span class="eyebrow">Site contact</span>${esc(d.contact)||'<span class="mu">&mdash;</span>'}</div>
-  <div><span class="eyebrow">Technician</span>${esc(d.tech)}</div></div></div>
+  <div><span class="eyebrow">Technician</span>${esc(d.tech)}</div><div><span class="eyebrow">Uploaded</span>${fmtUploaded(d.uploadedAt)||'<span class="mu">&mdash;</span>'}</div></div></div>
   <div class="card"><h2>Equipment summary</h2><div class="scroll"><table><thead><tr><th>System</th><th>Total</th><th>Working</th><th>Faulty</th><th>Work performed</th></tr></thead><tbody>${d.eq.map(r=>`<tr><td>${r.sys}</td><td>${esc(r.total)}</td><td>${esc(r.ok)}</td><td>${esc(r.bad)}</td><td>${esc(r.work)}</td></tr>`).join("")}</tbody></table></div></div>
   <div class="card">${sect("Findings (issues indicated)",d.find||[],"Severity")}</div>
   <div class="card"><h2>Overall remarks</h2><p>${esc(d.rem)||'<span class="mu">None.</span>'}</p>
@@ -1917,6 +1922,7 @@ function qrText(d){
  d.eq.forEach(r=>{if(r.total||r.ok||r.bad||r.work)L.push(r.sys+": total "+(r.total||0)+", working "+(r.ok||0)+", faulty "+(r.bad||0)+(r.work?" - "+r.work:""))});
   if((d.find||[]).length){L.push("","FINDINGS");(d.find).forEach((x,i)=>L.push((i+1)+". ["+x.sys+(x.lvl?", "+x.lvl:"")+"] "+x.text))}
  if(d.rem)L.push("","REMARKS: "+d.rem);
+ if(d.uploadedAt)L.push("Uploaded: "+fmtUploaded(d.uploadedAt));
  if(d.client)L.push("","Client rep: "+d.client);
  return L.join("\n");
 }
@@ -2062,8 +2068,15 @@ function fbDel(no){
   }).catch(e=>{console.error("Firebase delete error:",e); throw e});
 }
 
+function backfillUploaded(o){
+  let changed=false;
+  Object.values(o||{}).forEach(d=>{
+    if(d&&d.no&&!d.uploadedAt){ d.uploadedAt=Date.parse(d.date+"T00:00:00")||0; changed=true; }
+  });
+  return changed;
+}
 const store={all(){
-  if(fbDb && fbDb._loaded){ return fbDb.reports||{}; }
+  if(fbDb && fbDb._loaded){ if(backfillUploaded(fbDb.reports)) idbWrite(IDB_STORE,os=>{ Object.values(fbDb.reports).forEach(v=>{ if(v&&v.no){ try{os.put(v)}catch(e){} } }); }).catch(()=>{}); return fbDb.reports||{}; }
   if(fbDb && !fbDb._loaded){ return fbDb.reports||{}; }
   return (fbDb&&fbDb.reports)||{};
 },
@@ -2103,7 +2116,7 @@ function printReport(no){
 }
 /* ===== Print every report, one per page, with a summary cover ===== */
 function printAllReports(){
-  const reports=Object.values(store.all()).sort((a,b)=>(a.date||"").localeCompare(b.date||"")||(a.no||"").localeCompare(b.no||""));
+  const reports=sortByUploadedAsc(Object.values(store.all()));
   if(!reports.length){alert("There are no reports to print.");return}
   closeSide();
   const w=window.open("","_blank");
@@ -2116,8 +2129,8 @@ function printAllReports(){
   reports.forEach(d=>{const t=tot(d);G[0]+=t[0];G[1]+=t[1];G[2]+=t[2];(d.find||[]).forEach(f=>{nf++;const s=sev(f.lvl);if(s===2)nh++;else if(s===1)nm++;else nl++})});
   const summary=`<div class="cover"><h1>IT Service Reports</h1><div class="mu">Santa Clara Shipping Corp. · ${reports.length} report(s) · generated ${esc(new Date().toLocaleString())}</div>
   <h2>Overall totals</h2><table><tr><th>Total equipment</th><th>Working</th><th>Faulty</th><th>Findings</th><th>High</th><th>Medium</th><th>Low</th></tr><tr><td>${G[0]}</td><td>${G[1]}</td><td>${G[2]}</td><td>${nf}</td><td>${nh}</td><td>${nm}</td><td>${nl}</td></tr></table>
-  <h2>Report list</h2><table><tr><th>Date</th><th>Report no.</th><th>Site</th><th>Technician</th><th>Service type</th><th>Total</th><th>Working</th><th>Faulty</th><th>Findings</th></tr>
-  ${reports.map(d=>{const t=tot(d),c=(d.find||[]).length;return `<tr><td>${esc(d.date)}</td><td>${esc(d.no)}</td><td>${esc(d.site)}</td><td>${esc(d.tech)}</td><td>${esc(d.stype)}</td><td>${t[0]}</td><td>${t[1]}</td><td>${t[2]}</td><td>${c}</td></tr>`}).join("")}</table></div>`;
+  <h2>Report list (sorted by upload time)</h2><table><tr><th>Uploaded</th><th>Report no.</th><th>Site</th><th>Technician</th><th>Service type</th><th>Total</th><th>Working</th><th>Faulty</th><th>Findings</th></tr>
+  ${reports.map(d=>{const t=tot(d),c=(d.find||[]).length;return `<tr><td>${fmtUploaded(d.uploadedAt)}</td><td>${esc(d.no)}</td><td>${esc(d.site)}</td><td>${esc(d.tech)}</td><td>${esc(d.stype)}</td><td>${t[0]}</td><td>${t[1]}</td><td>${t[2]}</td><td>${c}</td></tr>`}).join("")}</table></div>`;
   // One page per report
   const pages=reports.map((d,i)=>{
    const eq=(d.eq||[]).map(r=>`<tr><td>${esc(r.sys)}</td><td>${esc(r.total)}</td><td>${esc(r.ok)}</td><td>${esc(r.bad)}</td><td>${esc(r.work)}</td></tr>`).join("");
@@ -2153,11 +2166,11 @@ let ALL=[];
 let EDIT_NO=null;
 function refreshSide(activeNo){
  const q=($("sideq")&&$("sideq").value||"").trim().toLowerCase();
- const all=Object.values(store.all()).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.no||"").localeCompare(a.no||""));
+ const all=sortByUploadedDesc(Object.values(store.all()));
  const rows=all.filter(r=>!q||[r.site,r.tech,r.no,r.stype].join(" ").toLowerCase().includes(q));
  if($("sidecount"))$("sidecount").textContent=all.length+" report(s)";
  if(!$("sidelist"))return;
- $("sidelist").innerHTML=rows.length?rows.map(r=>`<div class="side-item${r.no===activeNo?" active":""}" data-no="${esc(r.no)}"><div class="t">${esc(r.site||"(no site)")}</div><div class="s">${esc(r.date||"")} · ${esc(r.tech||"")} · ${esc(r.no||"")}<br>${esc(r.stype||"")} · ${(r.find||[]).length} issue(s)</div><div class="btns"><button class="sview" data-no="${esc(r.no)}">Open</button><button class="sedit" data-no="${esc(r.no)}">Edit</button><button class="sdel" data-no="${esc(r.no)}">Del</button></div><div class="btns"><button class="sprint" data-no="${esc(r.no)}">Print</button><button class="sxl" data-no="${esc(r.no)}">Excel</button></div></div>`).join("")
+ $("sidelist").innerHTML=rows.length?rows.map(r=>`<div class="side-item${r.no===activeNo?" active":""}" data-no="${esc(r.no)}"><div class="t">${esc(r.site||"(no site)")}</div><div class="s">${fmtUploaded(r.uploadedAt)} · ${esc(r.tech||"")} · ${esc(r.no||"")}<br>${esc(r.stype||"")} · ${(r.find||[]).length} issue(s)</div><div class="btns"><button class="sview" data-no="${esc(r.no)}">Open</button><button class="sedit" data-no="${esc(r.no)}">Edit</button><button class="sdel" data-no="${esc(r.no)}">Del</button></div><div class="btns"><button class="sprint" data-no="${esc(r.no)}">Print</button><button class="sxl" data-no="${esc(r.no)}">Excel</button></div></div>`).join("")
   :`<div class="empty"><div class="ico">&#128203;</div><strong>No reports yet</strong><p>Submitted reports will appear here and sync to your team.</p></div>`;
  $("sidelist").querySelectorAll(".side-item").forEach(it=>it.onclick=e=>{
    if(e.target.closest("button"))return;
@@ -2205,7 +2218,7 @@ function initSide(){
 function showList(){
   listPage=1;
   $("form").hidden=true;$("view").hidden=true;$("listv").hidden=false;
-  ALL=Object.values(store.all()).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.no||"").localeCompare(a.no||""));
+  ALL=sortByUploadedDesc(Object.values(store.all()));
   $("listv").innerHTML=`<div class="card top hero"><div class="brand"><div class="logo-carousel"><div class="logo-track"><img src="logoo.png" alt="Santa Clara Shipping Corp. logo"><img src="penafrancia.png" alt="Penafrancia logo" onerror="this.onerror=null;this.src='logo.png'"></div><button type="button" class="logo-arrow prev" aria-label="Previous logo">&#10094;</button><button type="button" class="logo-arrow next" aria-label="Next logo">&#10095;</button></div><div class="logo-dots"><button type="button" class="on" aria-label="Logo 1"></button><button type="button" aria-label="Logo 2"></button></div><div class="brand-text"><h1>Saved reports</h1><small>Santa Clara Shipping Corp.</small></div></div><div class="mu" id="listCount">${ALL.length} report(s) in the team database (no limit). Tap a row to open it.</div>
 <div class="field" style="margin-top:16px"><label for="q">Search by site, technician, or report no.</label><input id="q" placeholder="Type to filter"></div>
 <div class="act" style="margin-top:12px"><button class="p" id="newrep2">New report</button><button id="exportAll">Export all Excel</button><button id="printAll">Print all reports</button><button id="bk">Backup (file)</button><button id="rs">Restore</button><button id="clearAll" class="danger">Clear all</button><input id="rf" type="file" accept=".json,application/json" hidden></div>
@@ -2216,7 +2229,7 @@ function showList(){
 $("bk").onclick=()=>dlBlob("service-reports-backup.json","application/json",JSON.stringify(store.all()));
   $("rs").onclick=()=>$("rf").click();
   $("exportAll").onclick=()=>{
-    ALL=Object.values(store.all()).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.no||"").localeCompare(a.no||""));
+    ALL=sortByUploadedDesc(Object.values(store.all()));
     if(!ALL.length){alert("There are no reports to export yet.");return}
     $("lmsg").textContent="Building Excel summary of "+ALL.length+" report(s)...";
     try{
@@ -2231,7 +2244,7 @@ $("bk").onclick=()=>dlBlob("service-reports-backup.json","application/json",JSON
     }
   };
   $("printAll").onclick=()=>{
-    ALL=Object.values(store.all()).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.no||"").localeCompare(a.no||""));
+    ALL=sortByUploadedDesc(Object.values(store.all()));
     if(!ALL.length){alert("There are no reports to print.");return}
     printAllReports();
   };
@@ -2241,6 +2254,7 @@ $("bk").onclick=()=>dlBlob("service-reports-backup.json","application/json",JSON
   const r=new FileReader();
   r.onload=()=>{try{const o=JSON.parse(r.result);let n=0;
     const vals=Object.values(o).filter(d=>d&&d.no&&Array.isArray(d.eq));
+    vals.forEach(d=>{ if(!d.uploadedAt) d.uploadedAt=Date.parse(d.date+"T00:00:00")||Date.now(); });
     if(fbDb){ vals.forEach(d=>{ fbDb.reports[d.no]=d; }); fbDb.emit(); }
     idbWrite(IDB_STORE,os=>{ vals.forEach(d=>{ try{os.put(d)}catch(x){} }); }).catch(()=>{});
     vals.forEach(d=>{ n++; fbPut(d).catch(()=>{}); });
@@ -2256,8 +2270,8 @@ function drawList(){
   const start=(listPage-1)*PAGE_SIZE, slice=rows.slice(start,start+PAGE_SIZE);
   const lc=$("listCount"); if(lc) lc.textContent=rows.length+" report(s) in the team database (no limit). Tap a row to open it.";
   const lm=$("lmsg"); if(lm&&qv==="") lm.textContent="Showing "+(rows.length?start+1:0)+"–"+Math.min(start+PAGE_SIZE,rows.length)+" of "+rows.length+" (page "+listPage+"/"+totalPages+").";
- $("lt").innerHTML=`<thead><tr><th>Date</th><th>Site</th><th>Technician</th><th>Report no.</th><th>Issues</th><th></th></tr></thead><tbody>`+
-   (slice.length?slice.map(r=>`<tr class="lr" data-no="${esc(r.no)}" style="cursor:pointer"><td>${esc(r.date)}</td><td>${esc(r.site)}</td><td>${esc(r.tech)}</td><td>${esc(r.no)}</td><td>${(r.find||[]).length}</td><td style="white-space:nowrap"><button class="x edit" data-no="${esc(r.no)}" title="Edit">Edit</button> <button class="x del" data-no="${esc(r.no)}" title="Delete">Delete</button></td></tr>`).join(""):`<tr><td colspan="6" class="mu" style="text-align:center;padding:26px 12px">${qv?"No reports match your search.":"No reports found."}</td></tr>`)+`</tbody>`+
+ $("lt").innerHTML=`<thead><tr><th>Uploaded</th><th>Site</th><th>Technician</th><th>Report no.</th><th>Issues</th><th></th></tr></thead><tbody>`+
+   (slice.length?slice.map(r=>`<tr class="lr" data-no="${esc(r.no)}" style="cursor:pointer"><td title="Visit date: ${esc(r.date||"")}">${fmtUploaded(r.uploadedAt)}</td><td>${esc(r.site)}</td><td>${esc(r.tech)}</td><td>${esc(r.no)}</td><td>${(r.find||[]).length}</td><td style="white-space:nowrap"><button class="x edit" data-no="${esc(r.no)}" title="Edit">Edit</button> <button class="x del" data-no="${esc(r.no)}" title="Delete">Delete</button></td></tr>`).join(""):`<tr><td colspan="6" class="mu" style="text-align:center;padding:26px 12px">${qv?"No reports match your search.":"No reports found."}</td></tr>`)+`</tbody>`+
    (totalPages>1?`<tfoot><tr><td colspan="6" style="text-align:center;padding:10px"><button class="x" id="pgPrev" ${listPage<=1?"disabled":""}>← Prev</button> <span class="mu">Page ${listPage} / ${totalPages}</span> <button class="x" id="pgNext" ${listPage>=totalPages?"disabled":""}>Next →</button></td></tr></tfoot>`:"");
  $("lt").querySelectorAll(".lr").forEach(tr=>tr.onclick=()=>{const d=ALL.find(x=>x.no===tr.dataset.no);if(d)show(d)});
  $("lt").querySelectorAll(".del").forEach(b=>b.onclick=e=>{e.stopPropagation();
@@ -2302,7 +2316,7 @@ function editReport(no){
 }
 $("showlist").onclick=showList;
 $("submit").onclick=()=>{
- const base=collect(EDIT_NO);
+ const base=collect(EDIT_NO,EDIT_NO?store.get(EDIT_NO):null);
  if(!base.site||!base.tech){$("msg").textContent="Please fill in Client / Site and Technician.";return}
  const isUpdate=!!EDIT_NO;
  let saved=true;try{store.put(base)}catch(e){saved=false}
@@ -2320,7 +2334,7 @@ fbInit();
 fbDb.on(()=>{refreshSide(EDIT_NO); if($("lt"))drawList();});
 if($("syncNow"))$("syncNow").onclick=()=>{ setSyncState("loading","Syncing…"); fbFetch().then(()=>flushOutbox()).catch(()=>{}); };
 if($("exportAll2"))$("exportAll2").onclick=()=>{
-  const reps=Object.values(store.all()).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.no||"").localeCompare(a.no||""));
+  const reps=sortByUploadedDesc(Object.values(store.all()));
   if(!reps.length){alert("There are no reports to export yet.");return}
   try{ dlBlob("it-service-reports-summary.xlsx","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",buildAllXlsx(reps)); }
   catch(x){ alert("Excel export failed: "+(x&&x.message?x.message:String(x))); }
