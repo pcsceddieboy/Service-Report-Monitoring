@@ -15,14 +15,10 @@ body{font-family:var(--font);}
 .card:has(#find) h2::after{content:"\26A0\FE0F";}
 .card:has(#rem) h2::after{content:"\01F4DD";}
 #syncCard h2::after{content:"\01F504";}
-.card.hero{padding:14px var(--sp-4);}
-.card.hero .brand{flex-direction:row;align-items:center;text-align:left;gap:var(--sp-3);margin:0 0 var(--sp-2);}
-.card.hero .logo-carousel{width:54px;flex:0 0 54px;margin:0;}
-.card.hero .logo-track{transform:none !important;}
-.card.hero .logo-track img{max-height:54px;}
-.card.hero .logo-track img + img,.card.hero .logo-arrow,.card.hero .logo-dots{display:none !important;}
-.card.hero .brand-text h1{font-size:19px;}
-.card.hero .brand-text small{margin-top:2px;font-size:10.5px;}
+.card.hero{padding:0 var(--sp-4) var(--sp-4);overflow:hidden;}
+.card.hero .brand{flex-direction:column;align-items:stretch;text-align:center;gap:var(--sp-2);margin:0 0 var(--sp-3);}
+.card.hero .logo-carousel{width:auto;flex:1 1 auto;margin:0 -20px;align-self:stretch;border-radius:0;}
+.card.hero .logo-track img{height:clamp(200px,52vw,320px);width:100%;object-fit:contain;background:var(--surface-2);padding:var(--sp-2);}
 #showlist{width:100%;min-height:48px;background:transparent;border:1.5px solid var(--brand-600);color:var(--brand-600);}
 #showlist:hover{background:var(--accent-soft);box-shadow:none;}
 .field{margin-bottom:var(--sp-4);}
@@ -55,6 +51,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{padding:8px;margin-right:-
 #syncCard{gap:10px;padding:14px var(--sp-4);border-radius:var(--card-radius);}
 @media(max-width:640px){
 .card{padding:16px var(--sp-3);}
+.card.hero .logo-carousel{margin:0 -12px;}
 .act:has(#submit){position:sticky;bottom:0;z-index:50;margin:0 -12px;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));background:rgba(255,255,255,.92);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-top:1px solid var(--line);}
 }
 @media (prefers-color-scheme:dark){

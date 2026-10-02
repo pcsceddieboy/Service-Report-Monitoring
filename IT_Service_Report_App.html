@@ -257,11 +257,16 @@ select.lvl-high{background-color:var(--bad-bg);color:var(--bad);border-color:var
 .g2>div>span.eyebrow+*{display:block}
 
 /* ---------- brand / logo carousel ---------- */
-.brand{display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;margin:2px 0 16px}
-.brand img{width:clamp(210px,58vw,320px);height:auto;max-height:180px;object-fit:contain;border-radius:var(--r-md)}
-.logo-carousel{position:relative;width:clamp(210px,58vw,320px);margin:0 auto;overflow:hidden;border-radius:var(--r-md)}
+.brand{display:flex;flex-direction:column;align-items:stretch;text-align:center;gap:12px;margin:2px 0 16px}
+.card.top.hero{padding-top:0;overflow:hidden}
+.card.top.hero .logo-carousel{width:auto;margin:0 -19px;border-radius:0}
+@media(max-width:640px){
+.card.top.hero .logo-carousel{margin:0 -12px}
+}
+.brand img{width:100%;height:auto;max-height:300px;object-fit:contain;border-radius:var(--r-md)}
+.logo-carousel{position:relative;width:100%;margin:0 auto;overflow:hidden;border-radius:var(--r-md)}
 .logo-track{display:flex;transition:transform var(--t3) var(--ease)}
-.logo-track img{flex:0 0 100%;width:100%;height:auto;max-height:180px;object-fit:contain;padding:0}
+.logo-track img{flex:0 0 100%;width:100%;height:clamp(200px,52vw,320px);object-fit:contain;background:var(--surface-2);padding:8px}
 .logo-dots{display:flex;justify-content:center;gap:7px;margin-top:2px}
 .logo-dots button{
   min-height:0;min-width:0;width:9px;height:9px;border-radius:var(--r-full);padding:0;
