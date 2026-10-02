@@ -18,7 +18,7 @@ body{font-family:var(--font);}
 .card.hero{padding:0 var(--sp-4) var(--sp-4);overflow:hidden;}
 .card.hero .brand{flex-direction:column;align-items:stretch;text-align:center;gap:var(--sp-2);margin:0 0 var(--sp-3);}
 .card.hero .logo-carousel{width:auto;flex:1 1 auto;margin:0 -20px;align-self:stretch;border-radius:0;}
-.card.hero .logo-track img{height:clamp(200px,52vw,320px);width:100%;object-fit:contain;background:var(--surface-2);padding:var(--sp-2);}
+.card.hero .logo-track img{height:clamp(200px,52vw,320px);width:100%;object-fit:contain;background:transparent;padding:var(--sp-2);}
 #showlist{width:100%;min-height:48px;background:transparent;border:1.5px solid var(--brand-600);color:var(--brand-600);}
 #showlist:hover{background:var(--accent-soft);box-shadow:none;}
 .field{margin-bottom:var(--sp-4);}
